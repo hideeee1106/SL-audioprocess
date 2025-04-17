@@ -42,10 +42,22 @@ extern "C"
 
     SL_CAPI_EXPORT extern void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor);
 
-    SL_CAPI_EXPORT extern void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,float *mic,float *ref,float * res);
+    SL_CAPI_EXPORT extern void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,short *mic,short *ref,short * res);
 
-    SL_CAPI_EXPORT extern void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,float *in,float *out);
+/*!
+ * 开始进行回声消除
+ */
+    SL_CAPI_EXPORT extern void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,short *out);
 
+/*!
+ * 降噪算法
+ */
+    SL_CAPI_EXPORT extern int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out);
+
+/*!
+ * 开启语音唤醒功能
+ */
+    SL_CAPI_EXPORT extern void SL_AudioOpenKWS(SL_AudioProcesser *predictor);
 
 
 #ifdef __cplusplus

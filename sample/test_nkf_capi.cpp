@@ -28,7 +28,7 @@ void ExportWAV(
 }
 
 int main(int argc, char *argv[]){
-    if (argc < 4)
+    if (argc < 5)
     {
         printf("Usage:%s model_path mic_input_path ref_path\n", argv[0]);
         return -1;
@@ -36,7 +36,9 @@ int main(int argc, char *argv[]){
     char *model_path = argv[1];
     char *in_audio = argv[2];
     char *lpb_audio = argv[3];
-    char *out_audio = argv[4];
+    char *out_audio_wav = argv[4];
+
+
 
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
@@ -51,16 +53,38 @@ int main(int argc, char *argv[]){
     int audiolen=inputfile.getNumSamplesPerChannel();
     int audiolen2=inputlpbfile.getNumSamplesPerChannel();
     audiolen =audiolen2<audiolen ? audiolen2:audiolen;
-    int process_num=audiolen/256;
+    int shiftlens = 512;
+    int process_num=audiolen/shiftlens;
 
-    for (int i = 0; i < process_num; ++i) {
-        float outputs[256] = {0.0};
-        SL_EchoCancelFilterForWav1C16khz(filter,&inputfile.samples[0][i*256],&inputlpbfile.samples[0][i*256],outputs);
-        for(float output : outputs){
-            outputdata.push_back(output);    //for one forward process save first BLOCK_SHIFT model output samples
-        }
+
+    vector<short> in(audiolen);
+    for (int i = 0; i < audiolen; ++i) {
+        in[i] = (short(inputfile.samples[0][i]*32768));
     }
-    ExportWAV(out_audio,outputdata,8000);
+
+    vector<short> lpb(audiolen);
+    for (int i = 0; i < audiolen; ++i) {
+        lpb[i] = (short(inputlpbfile.samples[0][i]*32768));
+    }
+
+    printf("%d\n",audiolen);
+    for (int i = 0; i < process_num; ++i) {
+//        printf("i=%d\n",i);
+        short outputs[512] = {0};
+
+        SL_EchoCancelFilterForWav1C16khz(filter,&in[i*shiftlens],&lpb[i*shiftlens],outputs);
+
+        for(int j = 0;j<shiftlens;++j){
+            printf("%d\n",outputs[j]);
+            outputdata.push_back(float(outputs[j])/32768.0);    //for one forward process save first BLOCK_SHIFT model output samples
+        }
+//        break;
+
+
+
+    }
+
+    ExportWAV(out_audio_wav,outputdata,8000);
 
     SL_ReleaseAudioProcesser(filter);
 

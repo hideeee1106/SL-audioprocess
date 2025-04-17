@@ -32,7 +32,7 @@ void SL_EchoCancelFilterForWav1C16khzSingle(SL_EchoCancelFilter *predictor,float
 
 SL_AudioProcesser * SL_CreateAudioProcesser(const char *model_path){
     auto *predict = new SL_AudioProcesser();
-    predict->impl.AECInit(model_path);
+    predict->impl.Init(model_path);
     return predict;
 };
 
@@ -42,18 +42,36 @@ void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor){
     }
 };
 
-void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,float *mic,float *ref,float * res){
+void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,short *mic,short *ref,short * res){
 
     auto out = predictor->impl.RunAEC(mic,ref);
 
 
     for (int i = 0; i < predictor->impl.AEC_BLOCK_SHIFT; ++i) {
+
         res[i] = out[i];
+//        printf("outdata:%f,",res[i]);
     }
     predictor->impl.ResetAEC();
 };
 
-void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,float *in,float *out){
+void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,short *out){
     predictor->impl.RunNS(out,in);
 };
 
+int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out){
+    int code = predictor->impl.Run_Aec_Ns(in,ref,out);
+    if (code == 1){
+        auto x = predictor->impl.getOutputs();
+        for (int i = 0; i < predictor->impl.CaffeLens; ++i) {
+            out[i] = x[i];
+
+        }
+        predictor->impl.ReSetNsOutAudioCaffe();
+    }
+    return code;
+}
+
+void SL_AudioOpenKWS(SL_AudioProcesser *predictor){
+    predictor->impl.kws();
+}

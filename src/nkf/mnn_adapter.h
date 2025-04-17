@@ -20,11 +20,11 @@ class MNNAudioAdapter {
 public:
 
     MNNAudioAdapter(const std::string &model, int thread, bool use_model_bin = false) {
-        std::cout << "MNNAudioAdapter constructor called with: " << model << std::endl;
-        if (model.empty()) {
-            std::cerr << "Error: modelPath is empty!" << std::endl;
-            return;
-        }
+//        std::cout << "MNNAudioAdapter constructor called with: " << model << std::endl;
+//        if (model.empty()) {
+//            std::cerr << "Error: modelPath is empty!" << std::endl;
+//            return;
+//        }
 
         backend_ = MNN_FORWARD_CPU;
         detect_model_ = std::shared_ptr<MNN::Interpreter>(
@@ -56,9 +56,9 @@ public:
     }
 
     void Init() {
-        MNN_PRINT("Creating MNN session...\n");
+//        MNN_PRINT("Creating MNN session...\n");
         sess = detect_model_->createSession(_config);
-        MNN_PRINT("Session created!\n");
+//        MNN_PRINT("Session created!\n");
 
     }
 

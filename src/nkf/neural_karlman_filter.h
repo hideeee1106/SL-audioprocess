@@ -22,7 +22,7 @@ using namespace std;
 
 #define SAMEPLERATE  (16000)  // 采样率 16 kHz
 #define BLOCK_LEN    (1024)    // 处理块长度，每次处理 1024 个采样点
-#define BLOCK_SHIFT  (256)    // 块移位，每次移动 256 采样点（50% 重叠）
+#define BLOCK_SHIFT  (512)    // 块移位，每次移动 256 采样点（50% 重叠）
 #define FFT_OUT_SIZE (513)    // STFT 变换后单边频谱大小
 #define NKF_LEN (4)          // NKF 滤波器的 tap 数
 typedef complex<double> cpx_type;  // 复数数据类型
@@ -53,7 +53,7 @@ public:
 
 
 
-    std::vector<float > outputbuffer;
+    std::vector<short > outputbuffer;
 
     void Aec_Init(const char *modelPath){
         nkf_net = std::make_shared<MNNAudioAdapter>(modelPath, 1);
@@ -64,19 +64,20 @@ public:
         ResetInout();
     }
 
-    void enhance(const float * micdata,const float * refdata){
+    void enhance(const short * micdata,const short * refdata){
+//       将后面1024-256的部分移动到前面
         memmove(m_pEngine.mic_buffer, m_pEngine.mic_buffer + BLOCK_SHIFT, (BLOCK_LEN - BLOCK_SHIFT) * sizeof(float));
         memmove(m_pEngine.lpb_buffer, m_pEngine.lpb_buffer + BLOCK_SHIFT, (BLOCK_LEN - BLOCK_SHIFT) * sizeof(float));
 
         for(int n=0;n<BLOCK_SHIFT;n++){
-            m_pEngine.mic_buffer[n+BLOCK_LEN-BLOCK_SHIFT]=micdata[n];
-            m_pEngine.lpb_buffer[n+BLOCK_LEN-BLOCK_SHIFT]=refdata[n];
-            printf(",%f",refdata[n]);
+            m_pEngine.mic_buffer[n+BLOCK_LEN-BLOCK_SHIFT]=(float)micdata[n]/32768.0;
+            m_pEngine.lpb_buffer[n+BLOCK_LEN-BLOCK_SHIFT]=(float)refdata[n]/32768.0;
         }
         AEC_Infer();
 
         for(int j=0;j<BLOCK_SHIFT;j++){
-            outputbuffer.push_back(m_pEngine.out_buffer[j]);    //for one forward process save first BLOCK_SHIFT model output samples
+            outputbuffer.push_back(m_pEngine.out_buffer[j]*32768);    //for one forward process save first BLOCK_SHIFT model output samples
+//            printf("outputbuffer:%d,",outputbuffer[j]);
         }
     }
 
@@ -84,7 +85,7 @@ public:
         outputbuffer.clear();
     }
 
-    float * getoutput(){
+    short * getoutput(){
         return  outputbuffer.data();
     }
 

@@ -3,77 +3,8 @@
 //
 
 #include "denoise.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include "kiss_fft.h"
-#include "common.h"
-#include <math.h>
-#include "pitch.h"
-#include "arch.h"
-#include "rnn.h"
-#include "rnn_data.h"
-#include <dirent.h>
-#include <time.h>
-
-#define BLOCK_SIZE 8000
-#define FRAME_SIZE_SHIFT 2
-// FRAME_SIZE = 160
-#define FRAME_SIZE (40<<FRAME_SIZE_SHIFT)
-#define WINDOW_SIZE (2*FRAME_SIZE)
-#define FREQ_SIZE (FRAME_SIZE + 1)
-#define SAMPLE_RATE 16000
-
-/*for 16K speech files*/
-#define PITCH_MIN_PERIOD 20
-#define PITCH_MAX_PERIOD 256
-#define PITCH_FRAME_SIZE 320
-
-#define PITCH_BUF_SIZE (PITCH_MAX_PERIOD+PITCH_FRAME_SIZE)
-
-#define SQUARE(x) ((x)*(x))
-
-#define SMOOTH_BANDS 1
-
-#if SMOOTH_BANDS
-#define NB_BANDS 18
-#else
-#define NB_BANDS 17
-#endif
-
-#define CEPS_MEM 8
-#define NB_DELTA_CEPS 6
-
-#define NB_FEATURES (NB_BANDS+3*NB_DELTA_CEPS+2)
 
 
-
-static const opus_int16 eband5ms[] = {
-/*0  200 400 600 800  1k 1.2 1.4 1.6  2k 2.4 2.8 3.2  4k 4.8 5.6 6.8  8k 9.6 12k 15.6 20k*/
-        0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 20, 24, 28, 34, 40, 48, 60, 78, 100
-};
-
-
-typedef struct {
-    int init;
-    kiss_fft_state *kfft;
-    float half_window[FRAME_SIZE];
-    float dct_table[NB_BANDS*NB_BANDS];
-} CommonState;
-
-struct DenoiseState {
-    float analysis_mem[FRAME_SIZE];
-    float cepstral_mem[CEPS_MEM][NB_BANDS];
-    int memid;
-    float synthesis_mem[FRAME_SIZE];
-    float pitch_buf[PITCH_BUF_SIZE];
-    float pitch_enh_buf[PITCH_BUF_SIZE];
-    float last_gain;
-    int last_period;
-    float mem_hp_x[2];
-    float lastg[NB_BANDS];
-    RNNState rnn;
-};
 
 void compute_band_energy(float *bandE, const kiss_fft_cpx *X) {
     int i;
@@ -319,21 +250,22 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
     return 0;
 }
 
-static void frame_synthesis(DenoiseState *st, float *out, const kiss_fft_cpx *y) {
+static void frame_synthesis(DenoiseState *st, short *out, const kiss_fft_cpx *y) {
     float x[WINDOW_SIZE];
     int i;
     inverse_transform(x, y);
     apply_window(x);
-    for (i=0;i<FRAME_SIZE;i++) out[i] = x[i] + st->synthesis_mem[i];
+    for (i=0;i<FRAME_SIZE;i++) out[i] = (short)((x[i] + st->synthesis_mem[i]));
     RNN_COPY(st->synthesis_mem, &x[FRAME_SIZE], FRAME_SIZE);
 }
 
-static void biquad(float *y, float mem[2], const float *x, const float *b, const float *a, int N) {
+static void biquad(float *y, float mem[2], const short *x, const float *b, const float *a, int N) {
+
     int i;
     for (i=0;i<N;i++) {
         float xi, yi;
-        xi = x[i];
-        yi = x[i] + mem[0];
+        xi = (float)x[i];
+        yi = xi + mem[0];
         mem[0] = mem[1] + (b[0]*(double)xi - a[0]*(double)yi);
         mem[1] = (b[1]*(double)xi - a[1]*(double)yi);
         y[i] = yi;
@@ -370,7 +302,7 @@ void pitch_filter(kiss_fft_cpx *X, const kiss_fft_cpx *P, const float *Ex, const
     }
 }
 
-float  NosieCancel::rnnoise_process_frame(float *out, const float *in) {
+float  NosieCancel::rnnoise_process_frame(short *out, const short *in) {
     int i;
     kiss_fft_cpx X[FREQ_SIZE];   // 频域数据（FFT 结果）
     kiss_fft_cpx P[WINDOW_SIZE]; // 自相关函数
@@ -381,9 +313,9 @@ float  NosieCancel::rnnoise_process_frame(float *out, const float *in) {
     float g[NB_BANDS];            // 频带增益
     float gf[FREQ_SIZE]={1};      // 频率增益（插值后）
     float vad_prob = 0;           // VAD 语音概率
-    int silence;                  // 是否为静音
     static const float a_hp[2] = {-1.99599, 0.99600};
     static const float b_hp[2] = {-2, 1};
+
     biquad(x, st->mem_hp_x, in, b_hp, a_hp, FRAME_SIZE);
     silence = compute_frame_features(st, X, P, Ex, Ep, Exp, features, x);
 
@@ -415,4 +347,9 @@ float  NosieCancel::rnnoise_process_frame(float *out, const float *in) {
 
     frame_synthesis(st, out, X);
     return vad_prob;
+}
+
+int NosieCancel::getvad(){
+    int vad = silence;
+    return vad;
 }
