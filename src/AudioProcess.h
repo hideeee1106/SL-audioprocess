@@ -7,57 +7,42 @@
 
 #include <iostream>
 #include <memory>
+#include <sys/syslog.h>
 #include "nkf/neural_karlman_filter.h"
 #include "ns/denoise.h"
-#include <sphinxbase/ad.h>
-#include <sphinxbase/err.h>
-#include <sphinxbase/cmd_ln.h>
-#include <pocketsphinx.h>
+
+extern "C" {
+    #include <pocketsphinx.h>
+//    #include <sphinxbase/ad.h>
+//    #include <sphinxbase/err.h>
+//    #include <sphinxbase/cmd_ln.h>
+
+}
+
 
 class AudioProcess {
 public:
     const int AEC_BLOCK_SHIFT =  512;
     const int Ns_BLOCK_WINDOWS = (40<<2);
     const int CaffeLens = 2560;
-    const int kwschunk = 2048;
+//    2560/16000 = 160ms
 
-    const char *hmm_path = "./model-cn-5.2/zh_cn.cd_cont_5000";
-    const char *lm_path  = "./xiaosong_kws_data/9445.lm";
-    const char *dict_path = "./xiaosong_kws_data/9445.dic";
+    const char *hmm_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/model-cn-5.2/zh_cn.cd_cont_5000";
+    const char *lm_path  = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.lm";
+    const char *dict_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.dic";
 
     vector <short> NkfOutAudioCaffe;
     vector <short> NsOutAudioCaffe;
 public:
-    AudioProcess(){};
+    AudioProcess(){
+    };
     ~AudioProcess(){};
 
     void Init(const char *model_path){
         nkfProcessor = std::make_shared<NKFProcessor>();
         nsProcessor =  std::make_shared<NosieCancel>();
         nkfProcessor->Aec_Init(model_path);
-        if(enable_use_kws_ ){
-            // 参数配置
-            config = cmd_ln_init(nullptr, (const arg_t *) ps_args(), TRUE,
-                                 "-hmm", hmm_path,
-                                 "-lm", lm_path,
-                                 "-dict", dict_path,
-                                 "-samprate", "16000",
-                                 "-logfn", "/dev/null",
-                                 NULL);
-            if (config == nullptr) {
-//                fprintf(stderr, "Failed to create config object.\n");
-                  LOGD("Failed to create config object.\n");
-            }
 
-            // 初始化识别器
-            ps = ps_init(config);
-            if (ps == nullptr) {
-                LOGD("Failed to create recognizer.\n");
-                fprintf(stderr, "Failed to create recognizer.\n");
-
-            }
-
-        }
 
 
     }
@@ -90,7 +75,7 @@ public:
     }
 
     int Run_Aec_Ns(short *mic,short *ref,short *outdata){
-//      输入 512
+//      输入 512  SHORT 音频
         nkfProcessor->enhance(mic,ref);
         auto nkfout = nkfProcessor->getoutput();
         for (int i = 0; i < AEC_BLOCK_SHIFT; ++i) {
@@ -115,12 +100,58 @@ public:
 
         if( M == 0){
             if (enable_use_kws_){
+
                 int silencecode = simple_vad_int16_2560(NsOutAudioCaffe.data(),NsOutAudioCaffe.size());
+//                printf("silence:%d\n",silencecode);
                 if(silencecode == 1){
-                    ps_start_utt(ps);
+                    if(not in_speech){
+                        in_speech = true;
+                        ps_start_utt(ps);
+
+                    }
+
                     ps_process_raw(ps, NsOutAudioCaffe.data(), NsOutAudioCaffe.size(), FALSE, FALSE);
+                    count = count + 1;
+                    if (count > MAX_SPEECH_TIME){
+                        LOGD("MAX_SPEECH_TIME");
+                        ps_end_utt(ps);
+                        const char *hyp = ps_get_hyp(ps, nullptr);
+                        resetkws();
+                        if (hyp != nullptr) {
+                            printf("识别结果：%s\n", hyp);
+                            return 3;
+                        } else {
+                            printf("无识别结果\n");
+                            return 4;
+                        }
+
+
+                    }
+
                     return 2;
 //                  识别到语音，准备唤醒检测
+                }
+                else{
+                    if(in_speech){
+                        wait_count = wait_count + 1;
+                    }
+
+//                    count
+                    if(in_speech && wait_count == 3){
+                        ps_end_utt(ps);
+                        const char *hyp = ps_get_hyp(ps, nullptr);
+                        resetkws();
+                        if (hyp != nullptr) {
+                            printf("识别成功！！！！！！！！！！！，识别结果：%s\n", hyp);
+                            return 3;
+
+                        } else {
+                            printf("无识别结果\n");
+                            return 4;
+                        }
+
+                    }
+
                 }
             }
 
@@ -128,6 +159,14 @@ public:
         } else{
             return 0;
         }
+    }
+
+
+    void resetkws(){
+        count = 0;
+        in_speech = false;
+        wait_count = 0;
+
     }
 
     // 简单能量 + 过零率判断
@@ -146,9 +185,9 @@ public:
 
         energy /= len;  // 均方能量
         float zcr = (float)zero_crossings / len;
-
+//        printf("energy:%f,zcr:%f\n",energy,zcr);
         // === 阈值可调 ===
-        if (energy > 500000.0 && zcr > 0.01f && zcr < 0.2f) {
+        if (energy > 50000.0) {
             return 1; // 有语音
         } else {
             return 0; // 无语音
@@ -163,8 +202,35 @@ public:
         NsOutAudioCaffe.clear();
     }
 
-    void kws(){
+    void kws(const char* hmm_model,const char* dict_model, const char*lm_model){
         enable_use_kws_ = true;
+        // 参数配置
+        config = ps_config_init(NULL);
+        ps_default_search_args(config);  // 设置默认参数
+
+        ps_config_set_str(config, "hmm", hmm_model);
+        ps_config_set_str(config, "dict", dict_model);
+        ps_config_set_str(config, "lm", lm_model);
+        ps_config_set_str(config, "loglevel", "INFO");
+
+        if (config == NULL) {
+            std::cerr << "Error initializing config!" << std::endl;
+            return;
+        }
+        // 创建解码器
+        ps = ps_init(config);
+        if (ps == nullptr) {
+            fprintf(stderr, "Failed to create decoder\n");
+        } else {
+            printf("Decoder successfully created.\n");
+        }
+
+
+    }
+    void killkws(){
+        ps_free(ps);
+        ps_config_free(config);
+        enable_use_kws_ = false;
     }
 private:
     // 回声消除实例
@@ -174,9 +240,19 @@ private:
 
     bool enable_use_kws_{false};
 
-    cmd_ln_t *config ;
-    ps_decoder_t *ps;
-    
+    bool in_speech{false};
+
+    int count = 0;
+
+    int wait_count = 0;
+
+    const int MAX_SPEECH_TIME = 31;
+//    31 *0.16 = 5s
+
+    ps_config_t *config = nullptr;
+    ps_decoder_t *ps = nullptr;
+
+
 };
 
 
