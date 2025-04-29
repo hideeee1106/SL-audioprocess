@@ -30,7 +30,7 @@ private:
 
     int num_feature_bins=80;//80 bin
     int sample_rate=16000;//16k采样
-    int input_batch_size=30;
+    int input_batch_size=16;
 
     int offset = 0;
 

@@ -73,9 +73,11 @@ int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,sho
     return code;
 }
 
-void SL_AudioOpenKWS(SL_AudioProcesser *predictor,const char* hmm_model,const char* dict_model, const char*lm_model){
-    predictor->impl.kws(hmm_model,dict_model,lm_model);
+void SL_AudioOpenKWS(SL_AudioProcesser *predictor,const char *model_path,const char *token_file){
+    predictor->impl.kws(model_path, token_file);
 }
+
+
 void SL_AudioKillKWS(SL_AudioProcesser *predictor){
     predictor->impl.killkws();
 }
@@ -83,27 +85,3 @@ void SL_AudioKillKWS(SL_AudioProcesser *predictor){
 
 
 
-long SL_createKWSPipeline(char *model_path,char *token_file)
-{
-    KwsPipeline*predictor=new KwsPipeline(model_path,token_file);
-
-    return long (predictor);
-
-}
-
-
-
-int SL_StartDetectFromStream(long handle, int16_t *pcm, long len)
-{
-    KwsPipeline *kws_predictor=(KwsPipeline*)handle;
-
-    std::vector<int16_t>wav(pcm,pcm+len);
-
-    return kws_predictor->run(wav);
-}
-
-void SL_releaseKWSPipeline(long handle) {
-    KwsPipeline *kws_predictor=(KwsPipeline*)handle;
-    delete kws_predictor;
-
-}

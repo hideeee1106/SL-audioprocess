@@ -49,49 +49,19 @@ extern "C"
 
 /*!
  * AEC + 降噪算法
- *
- * return
- *  1 2560帧数据处理完成
- *  2 识别到说话声，开始唤醒测检测
- *  3 识别到唤醒词
- *  4 未识别到唤醒词
+ * * @return 返回指令编号
  */
     SL_CAPI_EXPORT extern int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out);
 
 /*!
  * 开启语音唤醒功能
  */
-    SL_CAPI_EXPORT extern void SL_AudioOpenKWS(SL_AudioProcesser *predictor,const char* hmm_model,const char* dict_model, const char*lm_model);
+    SL_CAPI_EXPORT extern void SL_AudioOpenKWS(SL_AudioProcesser *predictor, const char *model_path,const char *token_file);
 
 /*!
- * 回收资源并且关闭语音唤醒功能
- */
+// * 回收资源并且关闭语音唤醒功能
+// */
     SL_CAPI_EXPORT extern void SL_AudioKillKWS(SL_AudioProcesser *predictor);
-
-//
-
-/*!
-* 创建检测流程pipeline
-* @param model_path 模型路径
-* @param token_file token_file文件路径
-* @return 返回检测pipeline的handle
-*/
-SL_CAPI_EXPORT long SL_createKWSPipeline(char *model_path,char *token_file);
-
-/*!
- * 开始进行语音指令检测
- * @param handle 输入调用创建返回的handle
- * @param pcm 音频数据数组
- * @param len 音频数据长度
- * @return 返回指令编号
- */
-SL_CAPI_EXPORT int SL_StartDetectFromStream(long handle , int16_t *pcm, long len);
-
-/*!
- * 释放检测流程pipeline
- * @param handle 输入调用创建返回的handle
- */
-SL_CAPI_EXPORT void SL_releaseKWSPipeline(long handle);
 
 
 

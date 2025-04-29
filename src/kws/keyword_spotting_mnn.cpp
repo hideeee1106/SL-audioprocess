@@ -21,8 +21,6 @@ wekwsMNN::KeywordSpottingMNN::KeywordSpottingMNN(const std::string &model_path) 
     auto cacheShape = cacheTensor->shape();
 
 
-
-
     std::cout << "inputTensor shape:" << std::endl;
     for (auto shapeValue: inputShape) { std::cout << shapeValue << " "; }
     std::cout << "\ncacheTensor shape:" << std::endl;

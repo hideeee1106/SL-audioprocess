@@ -11,9 +11,13 @@
 #include "nkf/neural_karlman_filter.h"
 #include "ns/denoise.h"
 
+
 #define pocketsphinxkws 0
 #define fsmnkws 1
 
+#if fsmnkws
+#include "KwsPipeline.h"
+#endif
 
 #if pocketsphinxkws
 extern "C" {
@@ -23,8 +27,8 @@ extern "C" {
 
 class AudioProcess {
 public:
-    const int AEC_BLOCK_SHIFT =  512;
-    const int Ns_BLOCK_WINDOWS = (40<<2);
+    const int AEC_BLOCK_SHIFT = 512;
+    const int Ns_BLOCK_WINDOWS = (40 << 2);
     const int CaffeLens = 2560;
 //    2560/16000 = 160ms
 
@@ -33,38 +37,38 @@ public:
     const char *lm_path  = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.lm";
     const char *dict_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.dic";
 #endif
-    vector <short> NkfOutAudioCaffe;
-    vector <short> NsOutAudioCaffe;
+    vector<short> NkfOutAudioCaffe;
+    vector<short> NsOutAudioCaffe;
 public:
-    AudioProcess(){
+    AudioProcess() {
     };
-    ~AudioProcess(){};
 
-    void Init(const char *model_path){
+    ~AudioProcess() {};
+
+    void Init(const char *model_path) {
         nkfProcessor = std::make_shared<NKFProcessor>();
-        nsProcessor =  std::make_shared<NosieCancel>();
+        nsProcessor = std::make_shared<NosieCancel>();
         nkfProcessor->Aec_Init(model_path);
-
 
 
     }
 
-    short* RunAEC(short *mic,short *ref){
-        nkfProcessor->enhance(mic,ref);
+    short *RunAEC(short *mic, short *ref) {
+        nkfProcessor->enhance(mic, ref);
         auto out = nkfProcessor->getoutput();
         return out;
     }
 
-    void ResetAEC(){
+    void ResetAEC() {
         nkfProcessor->reset();
     }
 
-    float RunNS(short* out,short* in){
-        float prob = nsProcessor->rnnoise_process_frame(out,in);
+    float RunNS(short *out, short *in) {
+        float prob = nsProcessor->rnnoise_process_frame(out, in);
         return prob;
     }
 
-    static void remove_front_n(std::vector<short>& vec, size_t n) {
+    static void remove_front_n(std::vector<short> &vec, size_t n) {
         if (n == 0 || vec.empty()) return;
 
         if (n >= vec.size()) {
@@ -76,29 +80,68 @@ public:
         vec.resize(vec.size() - n);
     }
 
-    int Run_Aec_Ns(short *mic,short *ref,short *outdata){
+    // 简单能量 + 过零率判断
+    static int simple_vad_int16_2560(const short *input, int len) {
+        if (len != 2560) return 0;
+
+        double energy = 0.0;
+        int zero_crossings = 0;
+
+        for (int i = 0; i < len; i++) {
+            energy += input[i] * input[i];  // 累加能量
+            if (i > 0 && ((input[i - 1] >= 0 && input[i] < 0) || (input[i - 1] < 0 && input[i] >= 0))) {
+                zero_crossings++;  // 过零点检测
+            }
+        }
+
+        energy /= len;  // 均方能量
+        float zcr = (float) zero_crossings / len;
+//        printf("energy:%f,zcr:%f\n",energy,zcr);
+        // === 阈值可调 ===
+        if (energy > 50000.0) {
+            return 1; // 有语音
+        } else {
+            return 0; // 无语音
+        }
+    }
+
+    int Run_Aec_Ns(short *mic, short *ref, short *outdata) {
 //      输入 512  SHORT 音频
-        nkfProcessor->enhance(mic,ref);
+        nkfProcessor->enhance(mic, ref);
         auto nkfout = nkfProcessor->getoutput();
         for (int i = 0; i < AEC_BLOCK_SHIFT; ++i) {
             NkfOutAudioCaffe.push_back(nkfout[i]);
         }
         nkfProcessor->reset();
-        size_t N = NkfOutAudioCaffe.size()/Ns_BLOCK_WINDOWS;
+        size_t N = NkfOutAudioCaffe.size() / Ns_BLOCK_WINDOWS;
         size_t M = NkfOutAudioCaffe.size() % Ns_BLOCK_WINDOWS;
 
         for (int i = 0; i < N; ++i) {
             short NSINPUT[160] = {0};
             short NSOUTPUT[160] = {0};
             for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                NSINPUT[j] = NkfOutAudioCaffe[j+i*Ns_BLOCK_WINDOWS];
+                NSINPUT[j] = NkfOutAudioCaffe[j + i * Ns_BLOCK_WINDOWS];
             }
-            float prob = nsProcessor->rnnoise_process_frame(NSOUTPUT,NSINPUT);
+            float prob = nsProcessor->rnnoise_process_frame(NSOUTPUT, NSINPUT);
             for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
                 NsOutAudioCaffe.push_back(NSOUTPUT[j]);
             }
         }
-        remove_front_n(NkfOutAudioCaffe,N*Ns_BLOCK_WINDOWS);
+        remove_front_n(NkfOutAudioCaffe, N * Ns_BLOCK_WINDOWS);
+#if fsmnkws
+        if( M == 0){
+            if (enable_use_kws_){
+                std::vector<int16_t>kwswavdata(CaffeLens);
+                for (int i = 0; i < CaffeLens; ++i) {
+                    kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
+                }
+               int code = kwspoint->run(kwswavdata);
+                return code;
+            }
+        } else{
+            return 0;
+        }
+#endif
 
 #if pocketsphinxkws
         if( M == 0){
@@ -164,50 +207,23 @@ public:
         }
 #endif
 
-    }
+    };
 
-
-
-    short *  getOutputs(){
+    short *getOutputs() {
         return NsOutAudioCaffe.data();
     }
 
-    void ReSetNsOutAudioCaffe(){
+    void ReSetNsOutAudioCaffe() {
         NsOutAudioCaffe.clear();
     }
 
 
 #if pocketsphinxkws
     void resetkws(){
-        count = 0;
-        in_speech = false;
-        wait_count = 0;
-    }
-
-    // 简单能量 + 过零率判断
-    static int simple_vad_int16_2560(const short *input, int len) {
-        if (len != 2560) return 0;
-
-        double energy = 0.0;
-        int zero_crossings = 0;
-
-        for (int i = 0; i < len; i++) {
-            energy += input[i] * input[i];  // 累加能量
-            if (i > 0 && ((input[i - 1] >= 0 && input[i] < 0) || (input[i - 1] < 0 && input[i] >= 0))) {
-                zero_crossings++;  // 过零点检测
-            }
+            count = 0;
+            in_speech = false;
+            wait_count = 0;
         }
-
-        energy /= len;  // 均方能量
-        float zcr = (float)zero_crossings / len;
-//        printf("energy:%f,zcr:%f\n",energy,zcr);
-        // === 阈值可调 ===
-        if (energy > 50000.0) {
-            return 1; // 有语音
-        } else {
-            return 0; // 无语音
-        }
-    }
 
     void kws(const char* hmm_model,const char* dict_model, const char*lm_model){
         enable_use_kws_ = true;
@@ -239,6 +255,17 @@ public:
         ps_config_free(config);
         enable_use_kws_ = false;
     }
+#elif fsmnkws
+    void kws(const std::string& model_path, const std::string& token_file){
+        kwspoint = std::make_shared<KwsPipeline>(model_path,token_file);
+        enable_use_kws_ = true;
+    };
+    void killkws(){
+        enable_use_kws_ = false;
+        kwspoint.reset();
+    }
+
+
 #endif
 
 private:
@@ -247,24 +274,23 @@ private:
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
 
-#if pocketsphinxkws
-    bool enable_use_kws_{false};
-
     bool in_speech{false};
-
+    bool enable_use_kws_{false};
     int count = 0;
-
     int wait_count = 0;
-
     const int MAX_SPEECH_TIME = 31;
 //    31 *0.16 = 5s
 
+#if fsmnkws
+    std::shared_ptr<KwsPipeline> kwspoint;
+#endif
+
+#if pocketsphinxkws
     ps_config_t *config = nullptr;
     ps_decoder_t *ps = nullptr;
 
 #endif
 
 };
-
 
 #endif //NKF_MNN_DEPLOY_R328_AUDIOPROCESS_H
