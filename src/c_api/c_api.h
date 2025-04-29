@@ -67,6 +67,34 @@ extern "C"
  * 回收资源并且关闭语音唤醒功能
  */
     SL_CAPI_EXPORT extern void SL_AudioKillKWS(SL_AudioProcesser *predictor);
+
+//
+
+/*!
+* 创建检测流程pipeline
+* @param model_path 模型路径
+* @param token_file token_file文件路径
+* @return 返回检测pipeline的handle
+*/
+SL_CAPI_EXPORT long SL_createKWSPipeline(char *model_path,char *token_file);
+
+/*!
+ * 开始进行语音指令检测
+ * @param handle 输入调用创建返回的handle
+ * @param pcm 音频数据数组
+ * @param len 音频数据长度
+ * @return 返回指令编号
+ */
+SL_CAPI_EXPORT int SL_StartDetectFromStream(long handle , int16_t *pcm, long len);
+
+/*!
+ * 释放检测流程pipeline
+ * @param handle 输入调用创建返回的handle
+ */
+SL_CAPI_EXPORT void SL_releaseKWSPipeline(long handle);
+
+
+
 #ifdef __cplusplus
 }
 #endif

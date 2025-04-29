@@ -4,7 +4,7 @@
 
 #include "c_api.h"
 #include "c_api_define.h"
-
+#include "../KwsPipeline.h"
 #if 0
 SL_EchoCancelFilter * SL_CreateEchoCancelFilter(const char *model_path){
     auto *predict = new SL_EchoCancelFilter();
@@ -78,4 +78,32 @@ void SL_AudioOpenKWS(SL_AudioProcesser *predictor,const char* hmm_model,const ch
 }
 void SL_AudioKillKWS(SL_AudioProcesser *predictor){
     predictor->impl.killkws();
+}
+
+
+
+
+long SL_createKWSPipeline(char *model_path,char *token_file)
+{
+    KwsPipeline*predictor=new KwsPipeline(model_path,token_file);
+
+    return long (predictor);
+
+}
+
+
+
+int SL_StartDetectFromStream(long handle, int16_t *pcm, long len)
+{
+    KwsPipeline *kws_predictor=(KwsPipeline*)handle;
+
+    std::vector<int16_t>wav(pcm,pcm+len);
+
+    return kws_predictor->run(wav);
+}
+
+void SL_releaseKWSPipeline(long handle) {
+    KwsPipeline *kws_predictor=(KwsPipeline*)handle;
+    delete kws_predictor;
+
 }

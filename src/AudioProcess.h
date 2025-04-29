@@ -11,14 +11,15 @@
 #include "nkf/neural_karlman_filter.h"
 #include "ns/denoise.h"
 
+#define pocketsphinxkws 0
+#define fsmnkws 1
+
+
+#if pocketsphinxkws
 extern "C" {
     #include <pocketsphinx.h>
-//    #include <sphinxbase/ad.h>
-//    #include <sphinxbase/err.h>
-//    #include <sphinxbase/cmd_ln.h>
-
 }
-
+#endif
 
 class AudioProcess {
 public:
@@ -27,10 +28,11 @@ public:
     const int CaffeLens = 2560;
 //    2560/16000 = 160ms
 
+#if pocketsphinxkws
     const char *hmm_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/model-cn-5.2/zh_cn.cd_cont_5000";
     const char *lm_path  = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.lm";
     const char *dict_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.dic";
-
+#endif
     vector <short> NkfOutAudioCaffe;
     vector <short> NsOutAudioCaffe;
 public:
@@ -98,6 +100,7 @@ public:
         }
         remove_front_n(NkfOutAudioCaffe,N*Ns_BLOCK_WINDOWS);
 
+#if pocketsphinxkws
         if( M == 0){
             if (enable_use_kws_){
 
@@ -159,14 +162,26 @@ public:
         } else{
             return 0;
         }
+#endif
+
     }
 
 
+
+    short *  getOutputs(){
+        return NsOutAudioCaffe.data();
+    }
+
+    void ReSetNsOutAudioCaffe(){
+        NsOutAudioCaffe.clear();
+    }
+
+
+#if pocketsphinxkws
     void resetkws(){
         count = 0;
         in_speech = false;
         wait_count = 0;
-
     }
 
     // 简单能量 + 过零率判断
@@ -192,14 +207,6 @@ public:
         } else {
             return 0; // 无语音
         }
-    }
-
-    short *  getOutputs(){
-        return NsOutAudioCaffe.data();
-    }
-
-    void ReSetNsOutAudioCaffe(){
-        NsOutAudioCaffe.clear();
     }
 
     void kws(const char* hmm_model,const char* dict_model, const char*lm_model){
@@ -232,12 +239,15 @@ public:
         ps_config_free(config);
         enable_use_kws_ = false;
     }
+#endif
+
 private:
     // 回声消除实例
     std::shared_ptr<NKFProcessor> nkfProcessor;
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
 
+#if pocketsphinxkws
     bool enable_use_kws_{false};
 
     bool in_speech{false};
@@ -252,6 +262,7 @@ private:
     ps_config_t *config = nullptr;
     ps_decoder_t *ps = nullptr;
 
+#endif
 
 };
 
