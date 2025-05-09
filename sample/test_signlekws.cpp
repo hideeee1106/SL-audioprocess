@@ -1,4 +1,7 @@
 //
+// Created by hideeee on 2025/4/30.
+//
+//
 // Created by hideeee on 2025/4/29.
 
 #define DR_MP3_IMPLEMENTATION
@@ -73,38 +76,11 @@ void wavWrite_f32_to_int16(char *filename, const short *buffer, int sampleRate, 
     }
 }
 
-void ExportWAV(
-        const std::string & Filename,
-        const std::vector<float>& Data,
-        unsigned SampleRate) {
-    AudioFile<float>::AudioBuffer Buffer;
-    Buffer.resize(1);
-
-    Buffer[0] = Data;
-    size_t BufSz = Data.size();
-
-    AudioFile<float> File;
-    File.setAudioBuffer(Buffer);
-    File.setAudioBufferSize(1, (int)BufSz);
-    File.setNumSamplesPerChannel((int)BufSz);
-    File.setNumChannels(1);
-    File.setBitDepth(16);
-    File.setSampleRate(16000);
-    File.save(Filename, AudioFileFormat::Wave);
-}
-
 int main(int argc, char *argv[]){
-    if (argc < 5){
-        printf("Usage:./testcapi [inputWav] [RNNnoise_output] \n");
-        return -1;
-    }
-    char *in_file = argv[1];
-    char *ref_file = argv[2];
 
-    printf("Start doing noise supreesion\n");
 
-    char *out_file = argv[3];
-    char *model_path = argv[4];
+    char *in_file = argv[1];;
+    char *model_path = argv[2];
 
 
     uint32_t micsampleRate = 0;
@@ -115,45 +91,27 @@ int main(int argc, char *argv[]){
     vector<short> micinput(micsampleCount);
     for (int i = 0; i < micsampleCount; ++i) {
         micinput[i] = short (micbuffer[i]);
+
     }
-
-//    uint32_t refsampleRate = 0;
-//    uint64_t refsampleCount = 0;
-//    uint32_t refchannels = 0;
-//    float* refbuffer = wavRead_f32(ref_file, &refsampleRate, &refsampleCount, &refchannels);
-    vector<short> refinput(micsampleCount , 0) ;
-//    for (int i = 0; i < refsampleCount; ++i) {
-//        refinput[i] = short (refbuffer[i]);
-//    }
-
-
-    vector<float> outputdata;
-    size_t frames = micsampleCount / 512;
-
+    size_t frames = micsampleCount / 2560;
+    printf("count:%zu\n",frames);
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
-    SL_AudioOpenKWS(filter,"/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/avg_30.mnn",
-                    "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/tokens.txt");
+    SL_AudioOpenKWS(filter,argv[3],
+                    argv[4]);
 
-    short out[512*5] = {0};
+//    for (int i = 0; i < 100; ++i) {
+//        printf("daya == %d\n",micinput[i]);
+//    }
+
     int code;
     for (int i = 0; i < frames; ++i) {
 
-        code = SL_AudioProcessFor8Khz(filter,&micinput[i*512],&refinput[i*512],out);
-        if (code != -2){
-            for (short j : out) {
-//                printf("%d\n,",j);
-                outputdata.push_back(float(j)/32768.0);
-            }
-        }
-
+        code = SL_Audio_signle_kws(filter,&micinput[i*2560]);
+//        printf("i= %d,mic == %d\n",i,micinput[i*2560]);
     }
     SL_AudioKillKWS(filter);
-    printf("Finished RNNnoise Noise Supression \n");
-//    for (int i = 0; i < 16000; ++i) {
-//        printf("outputdata[i]  %f\n",outputdata[i]*32768);
-//    }
-    ExportWAV(out_file,outputdata,16000);
+
     SL_ReleaseAudioProcesser(filter);
     return 0;
 

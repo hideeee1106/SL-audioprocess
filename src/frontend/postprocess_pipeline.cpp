@@ -90,6 +90,7 @@ int PostDecoder::match_and_output()
     }
 
     if (isSubArray(default_keywords_seq[0],decoded_seq))
+
         return 1;
     else
         return 0;

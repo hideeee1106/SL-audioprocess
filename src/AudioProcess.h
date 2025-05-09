@@ -29,7 +29,7 @@ class AudioProcess {
 public:
     const int AEC_BLOCK_SHIFT = 512;
     const int Ns_BLOCK_WINDOWS = (40 << 2);
-    const int CaffeLens = 2560;
+    const int CaffeLens = 5120;
 //    2560/16000 = 160ms
 
 #if pocketsphinxkws
@@ -54,8 +54,16 @@ public:
     }
 
     short *RunAEC(short *mic, short *ref) {
+
+        auto start=std::chrono::high_resolution_clock::now();
+
         nkfProcessor->enhance(mic, ref);
         auto out = nkfProcessor->getoutput();
+
+        auto end=std::chrono::high_resolution_clock::now();
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+        int time=static_cast<int>(milliseconds.count());
+        std::cout<<"回声消除时间 "<<time<<" :ms"<<std::endl;
         return out;
     }
 
@@ -105,8 +113,50 @@ public:
         }
     }
 
+    int run_kws(const short *wav){
+        std::vector<int16_t>kwswavdata(CaffeLens);
+        for (int i = 0; i < CaffeLens; ++i) {
+            kwswavdata[i] = static_cast<int16_t>(wav[i]);
+
+        }
+        int code = kwspoint->run(kwswavdata);
+
+        return code;
+    }
+
+
+    int run_kws_ns(short *audio){
+        //      输入 512  SHORT 音频
+
+//        printf("run kws ns\n");
+        for (int i = 0; i < 32; ++i) {
+            short out[160] = {0};
+            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
+            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                NsOutAudioCaffe.push_back(out[j]);
+            }
+        }
+
+        if(NsOutAudioCaffe.size() == 5120){
+            std::vector<int16_t>kwswavdata(CaffeLens);
+            for (int i = 0; i < CaffeLens; ++i) {
+                kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
+
+            }
+            NsOutAudioCaffe.clear();
+            int code = kwspoint->run(kwswavdata);
+            return code;
+        } else{
+            return -2;
+        }
+
+    }
+
+
+
     int Run_Aec_Ns(short *mic, short *ref, short *outdata) {
 //      输入 512  SHORT 音频
+
         nkfProcessor->enhance(mic, ref);
         auto nkfout = nkfProcessor->getoutput();
         for (int i = 0; i < AEC_BLOCK_SHIFT; ++i) {
@@ -128,18 +178,25 @@ public:
             }
         }
         remove_front_n(NkfOutAudioCaffe, N * Ns_BLOCK_WINDOWS);
+
 #if fsmnkws
         if( M == 0){
             if (enable_use_kws_){
+                auto start_1=std::chrono::high_resolution_clock::now();
                 std::vector<int16_t>kwswavdata(CaffeLens);
                 for (int i = 0; i < CaffeLens; ++i) {
                     kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
                 }
+
                int code = kwspoint->run(kwswavdata);
-                return code;
+               return code;
+            } else{
+                return -1;
             }
+
+
         } else{
-            return 0;
+            return -2;
         }
 #endif
 
@@ -206,6 +263,7 @@ public:
             return 0;
         }
 #endif
+
 
     };
 
@@ -278,7 +336,7 @@ private:
     bool enable_use_kws_{false};
     int count = 0;
     int wait_count = 0;
-    const int MAX_SPEECH_TIME = 31;
+//    const int MAX_SPEECH_TIME = 31;
 //    31 *0.16 = 5s
 
 #if fsmnkws

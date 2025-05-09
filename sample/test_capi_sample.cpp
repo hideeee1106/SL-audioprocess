@@ -92,7 +92,7 @@ void ExportWAV(
     File.setNumSamplesPerChannel((int)BufSz);
     File.setNumChannels(1);
     File.setBitDepth(16);
-    File.setSampleRate(8000);
+    File.setSampleRate(SampleRate);
     File.save(Filename, AudioFileFormat::Wave);
 }
 
@@ -101,12 +101,17 @@ int main(int argc, char *argv[]){
         printf("Usage:./testcapi [inputWav] [RNNnoise_output] \n");
         return -1;
     }
+//    argv[1] = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/resource/mic.wav";
+//    argv[2] = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/resource/ref.wav";
     char *in_file = argv[1];
     char *ref_file = argv[2];
 
     printf("Start doing noise supreesion\n");
 
+//    argv[3] = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/resource/out.wav";
     char *out_file = argv[3];
+//    argv[4] = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/MODEL/nkfsim.mnn";
+    argv[4] = "/tmp/lib/nkfsim.mnn";
     char *model_path = argv[4];
 
 
@@ -151,7 +156,7 @@ int main(int argc, char *argv[]){
 
     printf("Finished RNNnoise Noise Supression \n");
 
-    ExportWAV(out_file,outputdata,8000);
+    ExportWAV(out_file,outputdata,16000);
     SL_ReleaseAudioProcesser(filter);
     return 0;
 

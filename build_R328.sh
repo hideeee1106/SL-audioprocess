@@ -15,6 +15,7 @@ export STAGING_DIR=/home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/
 
 cd ${BUILD_DIR}
 cmake .. \
+    -DBUILD_IN_R328=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_C_COMPILER=${GCC_COMPILER}-gcc \
     -DCMAKE_CXX_COMPILER=${GCC_COMPILER}-g++

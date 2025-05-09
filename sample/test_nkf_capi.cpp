@@ -23,7 +23,7 @@ void ExportWAV(
     File.setNumSamplesPerChannel((int)BufSz);
     File.setNumChannels(1);
     File.setBitDepth(16);
-    File.setSampleRate(8000);
+    File.setSampleRate(SampleRate);
     File.save(Filename, AudioFileFormat::Wave);
 }
 
@@ -37,8 +37,6 @@ int main(int argc, char *argv[]){
     char *in_audio = argv[2];
     char *lpb_audio = argv[3];
     char *out_audio_wav = argv[4];
-
-
 
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
@@ -69,22 +67,18 @@ int main(int argc, char *argv[]){
 
     printf("%d\n",audiolen);
     for (int i = 0; i < process_num; ++i) {
-//        printf("i=%d\n",i);
+        printf("i=%d\n",i);
         short outputs[512] = {0};
 
         SL_EchoCancelFilterForWav1C16khz(filter,&in[i*shiftlens],&lpb[i*shiftlens],outputs);
 
         for(int j = 0;j<shiftlens;++j){
-            printf("%d\n",outputs[j]);
+//            printf("%d\n",outputs[j]);
             outputdata.push_back(float(outputs[j])/32768.0);    //for one forward process save first BLOCK_SHIFT model output samples
         }
-//        break;
-
-
-
     }
 
-    ExportWAV(out_audio_wav,outputdata,8000);
+    ExportWAV(out_audio_wav,outputdata,16000);
 
     SL_ReleaseAudioProcesser(filter);
 

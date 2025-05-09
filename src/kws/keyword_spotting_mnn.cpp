@@ -5,10 +5,16 @@
 #include "cstring"
 
 wekwsMNN::KeywordSpottingMNN::KeywordSpottingMNN(const std::string &model_path) {
+    std::cout << "MNN Version: " << MNN::getVersion() << std::endl;
     // 1. Create Interpreter
     interpreter_ = std::shared_ptr<MNN::Interpreter>(MNN::Interpreter::createFromFile(model_path.c_str()));
     // 2. Create Session
     MNN::ScheduleConfig config;
+
+//    MNN::BackendConfig backendConfig;
+//    backendConfig.precision= MNN::BackendConfig::Precision_High;
+//    config.backendConfig= &backendConfig;
+
     session_ = interpreter_->createSession(config);
 
 
@@ -19,10 +25,12 @@ wekwsMNN::KeywordSpottingMNN::KeywordSpottingMNN(const std::string &model_path) 
 
     auto inputShape = inputTensor->shape();
     auto cacheShape = cacheTensor->shape();
-
+    auto outputshape = outputTensor->shape();
 
     std::cout << "inputTensor shape:" << std::endl;
     for (auto shapeValue: inputShape) { std::cout << shapeValue << " "; }
+    std::cout << "\noutputTensor shape:" << std::endl;
+    for (auto shapeValue: outputshape) { std::cout << shapeValue << " "; }
     std::cout << "\ncacheTensor shape:" << std::endl;
     for (auto shapeValue: cacheShape) { std::cout << shapeValue << " "; }
     std::cout << std::endl;
@@ -58,17 +66,20 @@ void wekwsMNN::KeywordSpottingMNN::Forward(const std::vector<std::vector<float>>
 
     //缓存结果送回cacheTensor下次推理使用
     auto r_cache=interpreter_->getSessionOutput(session_,"r_cache");
+
     cacheTensor->copyFromHostTensor(r_cache);
 
     // 3. Get Keyword Prob
     int num_outputs = outputTensor->channel();
     int output_dim = outputTensor->height();
     prob->resize(num_outputs);
+
     for (int i = 0; i < num_outputs; i++) {
         (*prob)[i].resize(output_dim);
         ::memcpy((*prob)[i].data(), outputTensor->host<float>() + i * output_dim,
                  sizeof(float) * output_dim);
     }
+//    printf("prob:%f\n",(*prob)[0][0]);
 
 
 }

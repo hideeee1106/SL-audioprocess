@@ -9,7 +9,7 @@
 
 namespace KEY_WORDS{
 
-    const std::wstring index1=L"小问";
+    const std::wstring index1=L"问";
 
 //    const std::wstring index2=L"开登";
 //

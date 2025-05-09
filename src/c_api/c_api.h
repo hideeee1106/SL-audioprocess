@@ -22,19 +22,6 @@
 extern "C"
 {
 #endif
-#if 0
-    // Snore Audio Predictor - 鼾声音频检测器
-    typedef struct  SL_EchoCancelFilter SL_EchoCancelFilter;
-
-
-    //    SL_CAPI_EXPORT extern int
-    SL_CAPI_EXPORT extern SL_EchoCancelFilter * SL_CreateEchoCancelFilter(const char *model_path);
-
-    SL_CAPI_EXPORT extern void SL_ReleaseEchoCancelFilter(SL_EchoCancelFilter *predictor);
-
-    SL_CAPI_EXPORT extern void SL_EchoCancelFilterForWav1C16khzSingle(SL_EchoCancelFilter *predictor,float *mic,float *ref,float * res);
-
-#endif
 
     typedef struct SL_AudioProcesser SL_AudioProcesser;
     //    SL_CAPI_EXPORT extern int
@@ -50,6 +37,10 @@ extern "C"
 /*!
  * AEC + 降噪算法
  * * @return 返回指令编号
+ *  1: 唤醒词 识别到小问小问
+ *  -1:没有开启唤醒词，降噪和回声消除都完成了
+ *  0: 未识别到唤醒词
+ *  -2:数据传输中
  */
     SL_CAPI_EXPORT extern int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out);
 
@@ -63,8 +54,8 @@ extern "C"
 // */
     SL_CAPI_EXPORT extern void SL_AudioKillKWS(SL_AudioProcesser *predictor);
 
-
-
+    SL_CAPI_EXPORT extern int SL_Audio_kws_ns(SL_AudioProcesser *predictor,short *audio);
+    SL_CAPI_EXPORT extern int SL_Audio_signle_kws(SL_AudioProcesser *predictor,short *audio);
 #ifdef __cplusplus
 }
 #endif

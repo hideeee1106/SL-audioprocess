@@ -5,29 +5,7 @@
 #include "c_api.h"
 #include "c_api_define.h"
 #include "../KwsPipeline.h"
-#if 0
-SL_EchoCancelFilter * SL_CreateEchoCancelFilter(const char *model_path){
-    auto *predict = new SL_EchoCancelFilter();
-    predict->impl.Aec_Init(model_path);
 
-    return predict;
-};
-
-void SL_ReleaseEchoCancelFilter(SL_EchoCancelFilter *predictor){
-    {
-        delete predictor;
-    }
-};
-
-void SL_EchoCancelFilterForWav1C16khzSingle(SL_EchoCancelFilter *predictor,float *mic,float *ref,float* res){
-    predictor->impl.enhance(mic,ref);
-    auto out = predictor->impl.getoutput();
-    for (int i = 0; i < 256; ++i) {
-        res[i] = out[i];
-    }
-    predictor->impl.reset();
-};
-#endif
 
 
 SL_AudioProcesser * SL_CreateAudioProcesser(const char *model_path){
@@ -43,7 +21,7 @@ void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor){
 };
 
 void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,short *mic,short *ref,short * res){
-
+    printf("cd run nkf");
     auto out = predictor->impl.RunAEC(mic,ref);
 
 
@@ -61,8 +39,9 @@ void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,shor
 
 int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out){
     int code = predictor->impl.Run_Aec_Ns(in,ref,out);
-    if (code != 0){
-        printf("code:%d\n",code);
+//    printf("code:%d\n",code);
+    if (code != -2){
+
         auto x = predictor->impl.getOutputs();
         for (int i = 0; i < predictor->impl.CaffeLens; ++i) {
             out[i] = x[i];
@@ -83,5 +62,14 @@ void SL_AudioKillKWS(SL_AudioProcesser *predictor){
 }
 
 
+int SL_Audio_kws_ns(SL_AudioProcesser *predictor,short *audio){
+    int code = predictor->impl.run_kws_ns(audio);
+//    printf("code:%d",code);
+    return code;
+}
 
 
+int SL_Audio_signle_kws(SL_AudioProcesser *predictor,short *audio){
+    int code = predictor->impl.run_kws(audio);
+    return code;
+}

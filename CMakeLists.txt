@@ -4,28 +4,39 @@ project(NKF_MNN_Deploy_R328)
 set(CMAKE_CXX_STANDARD 11)
 #set(CMAKE_BUILD_TYPE Debug)
 
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon -march=armv7-a")
+#set(CMAKE_CXX_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_CXX_FLAGS}")
+#set(CMAKE_C_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_C_FLAGS}" )
+#message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
-OPTION(BULID_IN_LINUX "Build in linux" ON)
+
 OPTION( BUILD_IN_R328 "Build in r328" OFF)
 
 message("Build in MNN")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/)
+include_directories(
+        /home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/lib/gcc/arm-openwrt-linux-muslgnueabi/6.4.1/include
+)
 
 
 
-#if(BUILD_IN_R328)
-# mnn R328 infer
-set(MNN_DIR /home/hideeee/3rparty/MNN/MNN/build-r328/mnn_install/include)
-set(MNN_lIB_DIR /home/hideeee/3rparty/MNN/MNN/build-r328/mnn_install/lib)
+if(NOT BUILD_IN_R328)
+#    fftw
+    ## linux
+    set(MNN_DIR /home/hideeee/3rparty/MNN/linux/include)
+    set(MNN_lIB_DIR /home/hideeee/3rparty/MNN/linux/lib)
+else()
+    #    fftw
+    include_directories(/home/hideeee/3rparty/fftw3/armv7_r328/install/include)
+    set(FFTW3_LIBRARIES /home/hideeee/3rparty/fftw3/armv7_r328/install/lib/libfftw3f.a)
 
+#    find_library(FFTW3_LIBRARIES NAMES fftw3 PATHS /home/hideeee/3rparty/fftw3/armv7_r328/install/lib)
+    # mnn R328 infer
+    set(MNN_DIR /home/hideeee/3rparty/MNN/r328/include)
+    set(MNN_lIB_DIR /home/hideeee/3rparty/MNN/r328/lib)
 
-#elseif (BULID_IN_LINUX)
-##
-#set(MNN_DIR /home/hideeee/3rparty/MNN/linux/include)
-#set(MNN_lIB_DIR /home/hideeee/3rparty/MNN/linux/lib)
-#
-#endif ()
+endif ()
 
 include_directories(${MNN_DIR})
 link_directories(${MNN_lIB_DIR})
@@ -54,12 +65,12 @@ set(COMPILE_FILES  ${C_API_FILES} ${NS_SRC_FILES} ${KWS_FILES})
 # Build shared library
 set(LIB_NAME AudioProcess-lite)
 add_library(${LIB_NAME} SHARED ${COMPILE_FILES})
-target_link_libraries(${LIB_NAME} ${MNN_LIBRARIES})
+target_link_libraries(${LIB_NAME} ${MNN_LIBRARIES} ${FFTW3_LIBRARIES})
 message("build KARLMAN AEC with MNN on R328 ")
 
 ##build target
-#add_executable(TestCAPINKFSample sample/test_nkf_capi.cpp ${COMPILE_FILES})
-#target_link_libraries(TestCAPINKFSample ${MNN_LIBRARIES})
+add_executable(TestCAPINKFSample sample/test_nkf_capi.cpp ${COMPILE_FILES})
+target_link_libraries(TestCAPINKFSample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES})
 ##
 ##
 #add_executable(TestCAPINSSample sample/test_ns_capi.cpp ${COMPILE_FILES})
@@ -68,5 +79,8 @@ message("build KARLMAN AEC with MNN on R328 ")
 #add_executable(TestCAPISample sample/test_capi_sample.cpp ${COMPILE_FILES})
 #target_link_libraries(TestCAPISample ${MNN_LIBRARIES})
 #
-add_executable(TestKWSCAPISample sample/test_wekws_capi.cpp ${COMPILE_FILES})
-target_link_libraries(TestKWSCAPISample ${MNN_LIBRARIES} )
+#add_executable(TestKWSCAPISample sample/test_wekws_capi.cpp ${COMPILE_FILES})
+#target_link_libraries(TestKWSCAPISample ${MNN_LIBRARIES} )
+
+add_executable(TestKWSsignleCAPISample sample/test_signlekws.cpp ${COMPILE_FILES})
+target_link_libraries(TestKWSsignleCAPISample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES})

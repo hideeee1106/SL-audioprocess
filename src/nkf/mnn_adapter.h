@@ -20,11 +20,7 @@ class MNNAudioAdapter {
 public:
 
     MNNAudioAdapter(const std::string &model, int thread, bool use_model_bin = false) {
-//        std::cout << "MNNAudioAdapter constructor called with: " << model << std::endl;
-//        if (model.empty()) {
-//            std::cerr << "Error: modelPath is empty!" << std::endl;
-//            return;
-//        }
+        std::cout << "MNN Version: " << MNN::getVersion() << std::endl;
 
         backend_ = MNN_FORWARD_CPU;
         detect_model_ = std::shared_ptr<MNN::Interpreter>(
@@ -33,7 +29,7 @@ public:
         _config.type = backend_;
         _config.numThread = thread;
         MNN::BackendConfig backendConfig;
-        backendConfig.precision = MNN::BackendConfig::Precision_High;
+//        backendConfig.precision = MNN::BackendConfig::Precision_High;
         backendConfig.power = MNN::BackendConfig::Power_High;
         _config.backendConfig = &backendConfig;
         std::cout << "MNNAudioAdapter end" << std::endl;
