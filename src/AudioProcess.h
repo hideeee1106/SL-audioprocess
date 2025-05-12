@@ -141,7 +141,6 @@ public:
             std::vector<int16_t>kwswavdata(CaffeLens);
             for (int i = 0; i < CaffeLens; ++i) {
                 kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
-
             }
             NsOutAudioCaffe.clear();
             int code = kwspoint->run(kwswavdata);
@@ -149,7 +148,6 @@ public:
         } else{
             return -2;
         }
-
     }
 
 

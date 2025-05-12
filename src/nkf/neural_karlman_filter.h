@@ -17,10 +17,10 @@
 #include "cmath"
 #include "fftw3.h"
 
-//#define USE_NEON 0
-//#ifdef USE_NEON
-////    #include <arm_neon.h>
-//#endif
+#define USE_NEON 0
+#ifdef USE_NEON
+    #include <arm_neon.h>
+#endif
 
 
 using namespace std;
@@ -114,8 +114,8 @@ public:
         }
 
 //      fftw3
-        mic_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * BLOCK_LEN);
-        lpb_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * BLOCK_LEN);
+        mic_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * FFT_OUT_SIZE);
+        lpb_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * FFT_OUT_SIZE);
 
         // 创建 FFTW3 计划
         fftwf_plan mic_plan = fftwf_plan_dft_r2c_1d(BLOCK_LEN, mic_in, mic_res, FFTW_ESTIMATE);
@@ -125,18 +125,16 @@ public:
         fftwf_execute(mic_plan);
         fftwf_execute(lpb_plan);
 
-        printf("micres:%f",mic_res[0][0]);
-//        pocketfft::r2c(shape, stridel, strideo, axes, pocketfft::FORWARD, mic_in, mic_res.data(), 1.0);
-//        pocketfft::r2c(shape, stridel, strideo, axes, pocketfft::FORWARD, lpb_in,lpb_res.data(), 1.0);
-
         memmove(m_pEngine.lpb_real,m_pEngine.lpb_real+FFT_OUT_SIZE,(NKF_LEN-1)*FFT_OUT_SIZE*sizeof(float));
         memmove(m_pEngine.lpb_imag,m_pEngine.lpb_imag+FFT_OUT_SIZE,(NKF_LEN-1)*FFT_OUT_SIZE*sizeof(float));
+
         for (int i=0;i<FFT_OUT_SIZE;i++){
             m_pEngine.lpb_real[(NKF_LEN-1)*FFT_OUT_SIZE+i]=(lpb_res[i][0]);
             m_pEngine.lpb_imag[(NKF_LEN-1)*FFT_OUT_SIZE+i]=(lpb_res[i][1]);
             mic_real[i]=(mic_res[i][0]);
             mic_imag[i]=(mic_res[i][1]);
         }
+
         float dh_real[NKF_LEN*FFT_OUT_SIZE]={0};
         float dh_imag[NKF_LEN*FFT_OUT_SIZE]={0};
         for (int i=0;i<NKF_LEN*FFT_OUT_SIZE;i++){
@@ -144,7 +142,7 @@ public:
             dh_imag[i]=(m_pEngine.h_posterior_imag[i]-m_pEngine.h_prior_imag[i]);
 
         }
-        printf("1");
+
         memcpy(m_pEngine.h_prior_real,m_pEngine.h_posterior_real,NKF_LEN*FFT_OUT_SIZE*sizeof(float));
         memcpy(m_pEngine.h_prior_imag,m_pEngine.h_posterior_imag,NKF_LEN*FFT_OUT_SIZE*sizeof(float));
 
@@ -156,48 +154,48 @@ public:
 
         int k=2*NKF_LEN+1;
         int is_tensor=1;
-//#ifdef USE_NEON
-//        printf("USE_NEON");
-//        for (int i = 0; i < FFT_OUT_SIZE; i++) {
-//            float32x4_t sum_real = vdupq_n_f32(0.0f);
-//            float32x4_t sum_imag = vdupq_n_f32(0.0f);
-//
-//            for (int j = 0; j < NKF_LEN; j += 4) {
-//                // 加载 lpb 和 h_prior
-//                float32x4_t lpb_real = vld1q_f32(&m_pEngine.lpb_real[j * FFT_OUT_SIZE + i]);
-//                float32x4_t lpb_imag = vld1q_f32(&m_pEngine.lpb_imag[j * FFT_OUT_SIZE + i]);
-//
-//                float32x4_t h_real = vld1q_f32(&m_pEngine.h_prior_real[NKF_LEN * i + j]);
-//                float32x4_t h_imag = vld1q_f32(&m_pEngine.h_prior_imag[NKF_LEN * i + j]);
-//
-//                // 储存特征输入
-//                vst1q_f32(&input_feature_real[k * i + j], lpb_real);
-//                vst1q_f32(&input_feature_imag[k * i + j], lpb_imag);
-//                vst1q_f32(&input_feature_real[k * i + j + NKF_LEN + 1], h_real);
-//                vst1q_f32(&input_feature_imag[k * i + j + NKF_LEN + 1], h_imag);
-//
-//                // 误差信号部分 (e_real / e_imag) 累加
-//                // e_real += lpb_real * h_real - lpb_imag * h_imag
-//                // e_imag += lpb_real * h_imag + lpb_imag * h_real
-//                sum_real = vmlsq_f32(vmlaq_f32(sum_real, lpb_real, h_real), lpb_imag, h_imag);
-//
-//
-//                sum_imag = vmlaq_f32(sum_imag, lpb_real, h_imag);
-//                sum_imag = vmlaq_f32(sum_imag, lpb_imag, h_real);
-//            }
-//
-//            // 水平加法累加 e_real / e_imag
-//            float32_t tmp_real[4], tmp_imag[4];
-//            vst1q_f32(tmp_real, sum_real);
-//            vst1q_f32(tmp_imag, sum_imag);
-//
-//            float e_r = mic_real[i] - (tmp_real[0] + tmp_real[1] + tmp_real[2] + tmp_real[3]);
-//            float e_i = mic_imag[i] - (tmp_imag[0] + tmp_imag[1] + tmp_imag[2] + tmp_imag[3]);
-//
-//            input_feature_real[k * i + NKF_LEN] = e_r;
-//            input_feature_imag[k * i + NKF_LEN] = e_i;
-//        }
-//#else
+#ifdef USE_NEON
+        printf("USE_NEON");
+        for (int i = 0; i < FFT_OUT_SIZE; i++) {
+            float32x4_t sum_real = vdupq_n_f32(0.0f);
+            float32x4_t sum_imag = vdupq_n_f32(0.0f);
+
+            for (int j = 0; j < NKF_LEN; j += 4) {
+                // 加载 lpb 和 h_prior
+                float32x4_t lpb_real = vld1q_f32(&m_pEngine.lpb_real[j * FFT_OUT_SIZE + i]);
+                float32x4_t lpb_imag = vld1q_f32(&m_pEngine.lpb_imag[j * FFT_OUT_SIZE + i]);
+
+                float32x4_t h_real = vld1q_f32(&m_pEngine.h_prior_real[NKF_LEN * i + j]);
+                float32x4_t h_imag = vld1q_f32(&m_pEngine.h_prior_imag[NKF_LEN * i + j]);
+
+                // 储存特征输入
+                vst1q_f32(&input_feature_real[k * i + j], lpb_real);
+                vst1q_f32(&input_feature_imag[k * i + j], lpb_imag);
+                vst1q_f32(&input_feature_real[k * i + j + NKF_LEN + 1], h_real);
+                vst1q_f32(&input_feature_imag[k * i + j + NKF_LEN + 1], h_imag);
+
+                // 误差信号部分 (e_real / e_imag) 累加
+                // e_real += lpb_real * h_real - lpb_imag * h_imag
+                // e_imag += lpb_real * h_imag + lpb_imag * h_real
+                sum_real = vmlsq_f32(vmlaq_f32(sum_real, lpb_real, h_real), lpb_imag, h_imag);
+
+
+                sum_imag = vmlaq_f32(sum_imag, lpb_real, h_imag);
+                sum_imag = vmlaq_f32(sum_imag, lpb_imag, h_real);
+            }
+
+            // 水平加法累加 e_real / e_imag
+            float32_t tmp_real[4], tmp_imag[4];
+            vst1q_f32(tmp_real, sum_real);
+            vst1q_f32(tmp_imag, sum_imag);
+
+            float e_r = mic_real[i] - (tmp_real[0] + tmp_real[1] + tmp_real[2] + tmp_real[3]);
+            float e_i = mic_imag[i] - (tmp_imag[0] + tmp_imag[1] + tmp_imag[2] + tmp_imag[3]);
+
+            input_feature_real[k * i + NKF_LEN] = e_r;
+            input_feature_imag[k * i + NKF_LEN] = e_i;
+        }
+#else
         for (int i=0;i<FFT_OUT_SIZE;i++){
 
             for (int j=0;j<NKF_LEN;j++){
@@ -216,9 +214,19 @@ public:
 
         }
 
-//#endif
+#endif
+        auto start=std::chrono::high_resolution_clock::now();
 
         nkf_net->Infer(input_feature_real,input_feature_imag,m_pEngine.instates);
+
+
+
+
+        auto end=std::chrono::high_resolution_clock::now();
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+        int time=static_cast<int>(milliseconds.count());
+        std::cout<<"tuili use "<<time<<" :ms"<<std::endl;
+
 
         auto enh_real = nkf_net->getOutput("enh_real");
         auto enh_imag = nkf_net->getOutput("enh_imag");
@@ -256,7 +264,6 @@ public:
         out_hii->copyToHostTensor(out_hii_host_tensor);
         auto *hii_out_state = out_hii_host_tensor->host<float>();
         memcpy(m_pEngine.instates[3].data(), hii_out_state, FFT_OUT_SIZE*18 * sizeof(float));
-
         for (int i=0;i<FFT_OUT_SIZE;i++){
             for (int j=0;j<NKF_LEN;j++){
                 m_pEngine.h_posterior_real[NKF_LEN*i+j] =m_pEngine.h_prior_real[NKF_LEN*i+j] +e_real[i]*kgreal[NKF_LEN*i+j]-e_imag[i]*kgimag[NKF_LEN*i+j];
@@ -280,59 +287,58 @@ public:
         }
         float mic_out[BLOCK_LEN]={0};
 
-
-        fftwf_plan plan_rfft = fftwf_plan_dft_c2r_1d(BLOCK_LEN, mic_res, mic_out, FFTW_BACKWARD);
+        fftwf_plan plan_rfft = fftwf_plan_dft_c2r_1d(BLOCK_LEN, mic_res, mic_out, FFTW_ESTIMATE);
         fftwf_execute(plan_rfft);
-//        pocketfft::c2r(shape, strideo, stridel, axes, false, mic_res.data(), mic_out, 1.0);
 
-//#ifdef USE_NEON
-//        // 使用SIMD加速复数转实数
-//        float32x4_t scale = vdupq_n_f32(1.0f / 1024.0f);
-//        for (int i = 0; i < BLOCK_LEN; i += 4) {
-//            // 将 float 类型的 mic_out[i] 转换为 float，再进行 SIMD 操作
-//            float tmp[4] = {(mic_out[i]),(mic_out[i + 1]),(mic_out[i + 2]),(mic_out[i + 3])};
-//
-//            float32x4_t out_vec = vld1q_f32(tmp);
-//            vst1q_f32(&estimated_block[i], vmulq_f32(out_vec, scale));
-//        }
-//#else
+
+#ifdef USE_NEON
+        // 使用SIMD加速复数转实数
+        float32x4_t scale = vdupq_n_f32(1.0f / 1024.0f);
+        for (int i = 0; i < BLOCK_LEN; i += 4) {
+            // 将 float 类型的 mic_out[i] 转换为 float，再进行 SIMD 操作
+            float tmp[4] = {(mic_out[i]),(mic_out[i + 1]),(mic_out[i + 2]),(mic_out[i + 3])};
+
+            float32x4_t out_vec = vld1q_f32(tmp);
+            vst1q_f32(&estimated_block[i], vmulq_f32(out_vec, scale));
+        }
+#else
         for (int i = 0; i < BLOCK_LEN; i++){
             estimated_block[i] = (mic_out[i])/1024.0;
         }
-//#endif
+#endif
 
         memmove(m_pEngine.out_buffer, m_pEngine.out_buffer + BLOCK_SHIFT,
                 (BLOCK_LEN - BLOCK_SHIFT) * sizeof(float));
         memset(m_pEngine.out_buffer + (BLOCK_LEN - BLOCK_SHIFT),
                0, BLOCK_SHIFT * sizeof(float));
-//#ifdef USE_NEON
-//        constexpr int num_blocks = BLOCK_LEN / 4; // 1024 / 4 = 256 blocks
-//
-//        // 主循环（NEON向量化 + 循环展开）
-//        for (int i = 0; i < num_blocks; i += 2) { // 每次处理2组4个float（8个float）
-//            // 加载第一组数据
-//            float32x4_t out1 = vld1q_f32(&m_pEngine.out_buffer[i*4 + 0]);
-//            float32x4_t est1 = vld1q_f32(&estimated_block[i*4 + 0]);
-//            float32x4_t win1 = vld1q_f32(&hanning_windows[i*4 + 0]);
-//
-//            // 加载第二组数据
-//            float32x4_t out2 = vld1q_f32(&m_pEngine.out_buffer[i*4 + 4]);
-//            float32x4_t est2 = vld1q_f32(&estimated_block[i*4 + 4]);
-//            float32x4_t win2 = vld1q_f32(&hanning_windows[i*4 + 4]);
-//
-//            // 计算乘加（fma指令）
-//            float32x4_t res1 = vfmaq_f32(out1, est1, win1);
-//            float32x4_t res2 = vfmaq_f32(out2, est2, win2);
-//
-//            // 存回结果
-//            vst1q_f32(&m_pEngine.out_buffer[i*4 + 0], res1);
-//            vst1q_f32(&m_pEngine.out_buffer[i*4 + 4], res2);
-//        }
-//#else
+#ifdef USE_NEON
+        constexpr int num_blocks = BLOCK_LEN / 4; // 1024 / 4 = 256 blocks
+
+        // 主循环（NEON向量化 + 循环展开）
+        for (int i = 0; i < num_blocks; i += 2) { // 每次处理2组4个float（8个float）
+            // 加载第一组数据
+            float32x4_t out1 = vld1q_f32(&m_pEngine.out_buffer[i*4 + 0]);
+            float32x4_t est1 = vld1q_f32(&estimated_block[i*4 + 0]);
+            float32x4_t win1 = vld1q_f32(&hanning_windows[i*4 + 0]);
+
+            // 加载第二组数据
+            float32x4_t out2 = vld1q_f32(&m_pEngine.out_buffer[i*4 + 4]);
+            float32x4_t est2 = vld1q_f32(&estimated_block[i*4 + 4]);
+            float32x4_t win2 = vld1q_f32(&hanning_windows[i*4 + 4]);
+
+            // 计算乘加（fma指令）
+            float32x4_t res1 = vfmaq_f32(out1, est1, win1);
+            float32x4_t res2 = vfmaq_f32(out2, est2, win2);
+
+            // 存回结果
+            vst1q_f32(&m_pEngine.out_buffer[i*4 + 0], res1);
+            vst1q_f32(&m_pEngine.out_buffer[i*4 + 4], res2);
+        }
+#else
         for (int i = 0; i < BLOCK_LEN; i++){
             m_pEngine.out_buffer[i] += estimated_block[i]*hanning_windows[i];
         }
-//#endif
+#endif
         delete enh_real_host_tensor;
         delete enh_imag_host_tensor;
         delete out_hrr_host_tensor;

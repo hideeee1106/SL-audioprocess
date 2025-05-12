@@ -21,7 +21,6 @@ void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor){
 };
 
 void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,short *mic,short *ref,short * res){
-    printf("cd run nkf");
     auto out = predictor->impl.RunAEC(mic,ref);
 
 
