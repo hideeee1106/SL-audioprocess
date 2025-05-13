@@ -161,13 +161,22 @@ public:
         }
 
         if(NsOutAudioCaffe.size() == 5120){
+
             int silence = simple_vad_int16_5120(&NsOutAudioCaffe[0],5120);
-            if(vad){
+            if(silence == 1){
+                in_speech = true;
+            }
+            printf("vad code = %d,silence = %d,in_speech = %d\n",vad,silence,in_speech);
+            if(vad and in_speech){
                 count = count + 1 ;
                 if(silence == 1){
                     last_voice_count = count;
                 }
-                if (silence == 0 and last_voice_count - count >= 2){
+                printf("last_voice_count = %d,count = %d\n",last_voice_count,count);
+                if (silence == 0 and count - last_voice_count >= 2){
+                    count = 0;
+                    last_voice_count = 0;
+                    in_speech = false;
                     return 3;
                 }
             }
@@ -179,6 +188,9 @@ public:
             }
             NsOutAudioCaffe.clear();
             int code = kwspoint->run(kwswavdata);
+            if(code == 1){
+                in_speech = false;
+            }
             return code;
         } else{
             return -2;

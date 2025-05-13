@@ -76,7 +76,7 @@ int SL_Audio_signle_kws(SL_AudioProcesser *predictor,short *audio){
 
 int SL_Audio_demo(SL_AudioProcesser *predictor,short *in,short *out,int vadcode){
     int code = predictor->impl.demo(in,vadcode);
-//    printf("code:%d\n",code);
+    printf("code:%d\n",code);
     if (code != -2){
         auto x = predictor->impl.getOutputs();
         for (int i = 0; i < predictor->impl.CaffeLens; ++i) {

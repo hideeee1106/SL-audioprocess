@@ -89,11 +89,19 @@ int PostDecoder::match_and_output()
         }
     }
 
-    if (isSubArray(default_keywords_seq[0],decoded_seq))
-
-        return 1;
-    else
-        return 0;
+    for (const auto & i : default_keywords_seq) {
+        int code = isSubArray(i,decoded_seq);
+        if (code ==1 ){
+            printf("识别到唤醒词\n");
+            return 1;
+        }
+    }
+    return 0;
+//    if (isSubArray(default_keywords_seq[0],decoded_seq))
+//
+//        return 1;
+//    else
+//        return 0;
 
 
 //    //统计关键字匹配到的字数

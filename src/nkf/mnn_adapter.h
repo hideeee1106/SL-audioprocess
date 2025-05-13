@@ -29,8 +29,7 @@ public:
         _config.type = backend_;
         _config.numThread = thread;
         MNN::BackendConfig backendConfig;
-//        backendConfig.precision = MNN::BackendConfig::Precision_High;
-        backendConfig.power = MNN::BackendConfig::Power_High;
+        backendConfig.precision = MNN::BackendConfig::Precision_Low;
         _config.backendConfig = &backendConfig;
         std::cout << "MNNAudioAdapter end" << std::endl;
     }

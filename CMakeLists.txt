@@ -26,6 +26,9 @@ if(NOT BUILD_IN_R328)
     ## linux
     set(MNN_DIR /home/hideeee/3rparty/MNN/linux/include)
     set(MNN_lIB_DIR /home/hideeee/3rparty/MNN/linux/lib)
+
+    include_directories(/home/hideeee/3rparty/fftw3/x86/include)
+    set(FFTW3_LIBRARIES /home/hideeee/3rparty/fftw3/x86/lib/libfftw3f.a)
 else()
     #    fftw
     include_directories(/home/hideeee/3rparty/fftw3/armv7_r328/install/include)
