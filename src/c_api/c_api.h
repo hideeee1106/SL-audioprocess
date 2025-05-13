@@ -56,6 +56,8 @@ extern "C"
 
     SL_CAPI_EXPORT extern int SL_Audio_kws_ns(SL_AudioProcesser *predictor,short *audio);
     SL_CAPI_EXPORT extern int SL_Audio_signle_kws(SL_AudioProcesser *predictor,short *audio);
+
+    SL_CAPI_EXPORT extern int SL_Audio_demo(SL_AudioProcesser *predictor,short *in,short *ref,short *out);
 #ifdef __cplusplus
 }
 #endif

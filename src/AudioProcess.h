@@ -89,8 +89,8 @@ public:
     }
 
     // 简单能量 + 过零率判断
-    static int simple_vad_int16_2560(const short *input, int len) {
-        if (len != 2560) return 0;
+    static int simple_vad_int16_5120(const short *input, int len) {
+        if (len != 5120) return 0;
 
         double energy = 0.0;
         int zero_crossings = 0;
@@ -126,8 +126,6 @@ public:
 
 
     int run_kws_ns(short *audio){
-        //      输入 512  SHORT 音频
-
 //        printf("run kws ns\n");
         for (int i = 0; i < 32; ++i) {
             short out[160] = {0};
@@ -152,9 +150,43 @@ public:
 
     }
 
+    int demo(short *audio,int vad){
+//        512
+        for (int i = 0; i < 32; ++i) {
+            short out[160] = {0};
+            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
+            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                NsOutAudioCaffe.push_back(out[j]);
+            }
+        }
 
+        if(NsOutAudioCaffe.size() == 5120){
+            int silence = simple_vad_int16_5120(&NsOutAudioCaffe[0],5120);
+            if(vad){
+                count = count + 1 ;
+                if(silence == 1){
+                    last_voice_count = count;
+                }
+                if (silence == 0 and last_voice_count - count >= 2){
+                    return 3;
+                }
+            }
 
-    int Run_Aec_Ns(short *mic, short *ref, short *outdata) {
+            std::vector<int16_t>kwswavdata(CaffeLens);
+            for (int i = 0; i < CaffeLens; ++i) {
+                kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
+
+            }
+            NsOutAudioCaffe.clear();
+            int code = kwspoint->run(kwswavdata);
+            return code;
+        } else{
+            return -2;
+        }
+
+    }
+
+    int Run_Aec_Ns(short *mic, short *ref) {
 //      输入 512  SHORT 音频
 
         nkfProcessor->enhance(mic, ref);
@@ -193,8 +225,6 @@ public:
             } else{
                 return -1;
             }
-
-
         } else{
             return -2;
         }
@@ -335,7 +365,7 @@ private:
     bool in_speech{false};
     bool enable_use_kws_{false};
     int count = 0;
-    int wait_count = 0;
+    int last_voice_count = 0;
 //    const int MAX_SPEECH_TIME = 31;
 //    31 *0.16 = 5s
 

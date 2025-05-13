@@ -8,6 +8,9 @@ set(CMAKE_CXX_STANDARD 11)
 #set(CMAKE_CXX_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_CXX_FLAGS}")
 #set(CMAKE_C_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_C_FLAGS}" )
 #message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+#include_directories(
+#        /home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/lib/gcc/arm-openwrt-linux-muslgnueabi/6.4.1/include
+#)
 
 
 OPTION( BUILD_IN_R328 "Build in r328" OFF)
@@ -15,9 +18,6 @@ OPTION( BUILD_IN_R328 "Build in r328" OFF)
 message("Build in MNN")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/)
-include_directories(
-        /home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/lib/gcc/arm-openwrt-linux-muslgnueabi/6.4.1/include
-)
 
 
 

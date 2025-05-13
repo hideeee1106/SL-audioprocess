@@ -79,8 +79,12 @@ void wavWrite_f32_to_int16(char *filename, const short *buffer, int sampleRate, 
 int main(int argc, char *argv[]){
 
 
-    char *in_file = argv[1];;
-    char *model_path = argv[2];
+//    char *in_file = "/mnt/UDISK/raw_audio_01.wav";;
+//    char *model_path = "/tmp/lib/nkfsim.mnn";
+    char *in_file = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/resource/raw_audio_01.wav";;
+    char *model_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/MODEL/nkfsim.mnn";
+
+
 
 
     uint32_t micsampleRate = 0;
@@ -93,22 +97,17 @@ int main(int argc, char *argv[]){
         micinput[i] = short (micbuffer[i]);
 
     }
-    size_t frames = micsampleCount / 2560;
+    size_t frames = micsampleCount / 5120;
     printf("count:%zu\n",frames);
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
-    SL_AudioOpenKWS(filter,argv[3],
-                    argv[4]);
-
-//    for (int i = 0; i < 100; ++i) {
-//        printf("daya == %d\n",micinput[i]);
-//    }
+    SL_AudioOpenKWS(filter,"/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/MODEL/avg_30.mnn",
+                    "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/MODEL/tokens.txt");
 
     int code;
     for (int i = 0; i < frames; ++i) {
 
-        code = SL_Audio_signle_kws(filter,&micinput[i*2560]);
-//        printf("i= %d,mic == %d\n",i,micinput[i*2560]);
+        code = SL_Audio_signle_kws(filter,&micinput[i*5120]);
     }
     SL_AudioKillKWS(filter);
 
