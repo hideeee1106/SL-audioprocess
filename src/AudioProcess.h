@@ -54,16 +54,8 @@ public:
     }
 
     short *RunAEC(short *mic, short *ref) {
-
-        auto start=std::chrono::high_resolution_clock::now();
-
         nkfProcessor->enhance(mic, ref);
         auto out = nkfProcessor->getoutput();
-
-        auto end=std::chrono::high_resolution_clock::now();
-        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
-        int time=static_cast<int>(milliseconds.count());
-        std::cout<<"回声消除时间 "<<time<<" :ms"<<std::endl;
         return out;
     }
 

@@ -114,8 +114,8 @@ public:
         }
 
 //      fftw3
-        mic_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * BLOCK_LEN);
-        lpb_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * BLOCK_LEN);
+        mic_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * FFT_OUT_SIZE);
+        lpb_res = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * FFT_OUT_SIZE);
 
         // 创建 FFTW3 计划
         fftwf_plan mic_plan = fftwf_plan_dft_r2c_1d(BLOCK_LEN, mic_in, mic_res, FFTW_ESTIMATE);
@@ -220,6 +220,7 @@ public:
 
         nkf_net->Infer(input_feature_real,input_feature_imag,m_pEngine.instates);
 
+
         auto enh_real = nkf_net->getOutput("enh_real");
         auto enh_imag = nkf_net->getOutput("enh_imag");
         auto out_hrr =nkf_net->getOutput( "out_hrr");
@@ -281,7 +282,7 @@ public:
         float mic_out[BLOCK_LEN]={0};
 
 
-        fftwf_plan plan_rfft = fftwf_plan_dft_c2r_1d(BLOCK_LEN, mic_res, mic_out, FFTW_BACKWARD);
+        fftwf_plan plan_rfft = fftwf_plan_dft_c2r_1d(BLOCK_LEN, mic_res, mic_out, FFTW_ESTIMATE);
         fftwf_execute(plan_rfft);
 //        pocketfft::c2r(shape, strideo, stridel, axes, false, mic_res.data(), mic_out, 1.0);
 

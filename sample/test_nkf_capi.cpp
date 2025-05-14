@@ -31,13 +31,11 @@ int main(int argc, char *argv[]){
     if (argc < 5)
     {
         printf("Usage:%s model_path mic_input_path ref_path\n", argv[0]);
-        return -1;
     }
-    char *model_path = argv[1];
-    char *in_audio = argv[2];
-    char *lpb_audio = argv[3];
-    char *out_audio_wav = argv[4];
-
+    char *model_path = "/tmp/lib/nkfsim_f16.mnn";
+    char *in_audio = "/mnt/UDISK/mic.wav";
+    char *lpb_audio = "/mnt/UDISK/ref.wav";
+    char *out_audio_wav ="/mnt/UDISK/out.wav";
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
 

@@ -15,12 +15,14 @@
 #include <fstream>
 #include <vector>
 #include "../model_loader/model_loader.h"
+#include <sys/syslog.h>
+#include <chrono>
 
 class MNNAudioAdapter {
 public:
 
     MNNAudioAdapter(const std::string &model, int thread, bool use_model_bin = false) {
-        std::cout << "MNN Version: " << MNN::getVersion() << std::endl;
+        std::cout <<"MNN Model "<<model<< "MNN Version: " << MNN::getVersion() << std::endl;
 
         backend_ = MNN_FORWARD_CPU;
         detect_model_ = std::shared_ptr<MNN::Interpreter>(
@@ -30,6 +32,8 @@ public:
         _config.numThread = thread;
         MNN::BackendConfig backendConfig;
         backendConfig.precision = MNN::BackendConfig::Precision_Low;
+        backendConfig.power = MNN::BackendConfig::Power_High;
+//        backendConfig.memory = MNN::BackendConfig.
         _config.backendConfig = &backendConfig;
         std::cout << "MNNAudioAdapter end" << std::endl;
     }
@@ -74,9 +78,14 @@ public:
         memcpy(in_hri->host<float>(), inputs[2].data(), inputs[2].size() * sizeof(float));
         memcpy(in_hii->host<float>(), inputs[3].data(), inputs[3].size() * sizeof(float));
 
-
         // 运行 AEC 计算
+        auto start=std::chrono::high_resolution_clock::now();
+
         detect_model_->runSession(sess);
+        auto end=std::chrono::high_resolution_clock::now();
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+        int time=static_cast<int>(milliseconds.count());
+        std::cout<<"推理耗时 "<<time<<" :ms"<<std::endl;
     }
 
     MNN::Tensor *  getOutput(const std::string& outputname){
