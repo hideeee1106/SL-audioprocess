@@ -37,7 +37,7 @@ void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,shor
 };
 
 int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out){
-    int code = predictor->impl.Run_Aec_Ns(in,ref,out);
+    int code = predictor->impl.Run_Aec_Ns(in,ref);
 //    printf("code:%d\n",code);
     if (code != -2){
 
@@ -63,12 +63,25 @@ void SL_AudioKillKWS(SL_AudioProcesser *predictor){
 
 int SL_Audio_kws_ns(SL_AudioProcesser *predictor,short *audio){
     int code = predictor->impl.run_kws_ns(audio);
-//    printf("code:%d",code);
+    printf("code:%d",code);
     return code;
 }
 
 
 int SL_Audio_signle_kws(SL_AudioProcesser *predictor,short *audio){
     int code = predictor->impl.run_kws(audio);
+    return code;
+}
+
+int SL_Audio_demo(SL_AudioProcesser *predictor,short *in,short *out,int vadcode){
+    int code = predictor->impl.demo(in,vadcode);
+    printf("code:%d\n",code);
+    if (code != -2){
+        auto x = predictor->impl.getOutputs();
+        for (int i = 0; i < predictor->impl.CaffeLens; ++i) {
+            out[i] = x[i];
+        }
+        predictor->impl.ReSetNsOutAudioCaffe();
+    }
     return code;
 }

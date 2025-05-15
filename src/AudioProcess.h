@@ -10,7 +10,7 @@
 #include <sys/syslog.h>
 #include "nkf/neural_karlman_filter.h"
 #include "ns/denoise.h"
-
+#include "aecm/echo_control_mobile.h"
 
 #define pocketsphinxkws 0
 #define fsmnkws 1
@@ -54,16 +54,8 @@ public:
     }
 
     short *RunAEC(short *mic, short *ref) {
-
-        auto start=std::chrono::high_resolution_clock::now();
-
         nkfProcessor->enhance(mic, ref);
         auto out = nkfProcessor->getoutput();
-
-        auto end=std::chrono::high_resolution_clock::now();
-        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
-        int time=static_cast<int>(milliseconds.count());
-        std::cout<<"回声消除时间 "<<time<<" :ms"<<std::endl;
         return out;
     }
 
@@ -89,8 +81,8 @@ public:
     }
 
     // 简单能量 + 过零率判断
-    static int simple_vad_int16_2560(const short *input, int len) {
-        if (len != 2560) return 0;
+    static int simple_vad_int16_5120(const short *input, int len) {
+        if (len != 5120) return 0;
 
         double energy = 0.0;
         int zero_crossings = 0;
@@ -126,8 +118,6 @@ public:
 
 
     int run_kws_ns(short *audio){
-        //      输入 512  SHORT 音频
-
 //        printf("run kws ns\n");
         for (int i = 0; i < 32; ++i) {
             short out[160] = {0};
@@ -150,9 +140,55 @@ public:
         }
     }
 
+    int demo(short *audio,int vad){
+//        512
+        for (int i = 0; i < 32; ++i) {
+            short out[160] = {0};
+            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
+            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                NsOutAudioCaffe.push_back(out[j]);
+            }
+        }
 
+        if(NsOutAudioCaffe.size() == 5120){
 
-    int Run_Aec_Ns(short *mic, short *ref, short *outdata) {
+            int silence = simple_vad_int16_5120(&NsOutAudioCaffe[0],5120);
+            if(silence == 1){
+                in_speech = true;
+            }
+            printf("vad code = %d,silence = %d,in_speech = %d\n",vad,silence,in_speech);
+            if(vad and in_speech){
+                count = count + 1 ;
+                if(silence == 1){
+                    last_voice_count = count;
+                }
+                printf("last_voice_count = %d,count = %d\n",last_voice_count,count);
+                if (silence == 0 and count - last_voice_count >= 2){
+                    count = 0;
+                    last_voice_count = 0;
+                    in_speech = false;
+                    return 3;
+                }
+            }
+
+            std::vector<int16_t>kwswavdata(CaffeLens);
+            for (int i = 0; i < CaffeLens; ++i) {
+                kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
+
+            }
+            NsOutAudioCaffe.clear();
+            int code = kwspoint->run(kwswavdata);
+            if(code == 1){
+                in_speech = false;
+            }
+            return code;
+        } else{
+            return -2;
+        }
+
+    }
+
+    int Run_Aec_Ns(short *mic, short *ref) {
 //      输入 512  SHORT 音频
 
         nkfProcessor->enhance(mic, ref);
@@ -191,8 +227,6 @@ public:
             } else{
                 return -1;
             }
-
-
         } else{
             return -2;
         }
@@ -330,12 +364,12 @@ private:
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
 
+//    std::shared_ptr<Webrtc>
+
     bool in_speech{false};
     bool enable_use_kws_{false};
     int count = 0;
-    int wait_count = 0;
-//    const int MAX_SPEECH_TIME = 31;
-//    31 *0.16 = 5s
+    int last_voice_count = 0;
 
 #if fsmnkws
     std::shared_ptr<KwsPipeline> kwspoint;
