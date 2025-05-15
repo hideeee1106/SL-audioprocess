@@ -10,7 +10,7 @@
 #include <sys/syslog.h>
 #include "nkf/neural_karlman_filter.h"
 #include "ns/denoise.h"
-
+#include "aecm/echo_control_mobile.h"
 
 #define pocketsphinxkws 0
 #define fsmnkws 1
@@ -366,12 +366,12 @@ private:
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
 
+//    std::shared_ptr<Webrtc>
+
     bool in_speech{false};
     bool enable_use_kws_{false};
     int count = 0;
     int last_voice_count = 0;
-//    const int MAX_SPEECH_TIME = 31;
-//    31 *0.16 = 5s
 
 #if fsmnkws
     std::shared_ptr<KwsPipeline> kwspoint;
