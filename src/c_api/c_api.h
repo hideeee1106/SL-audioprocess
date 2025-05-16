@@ -29,7 +29,7 @@ extern "C"
 
     SL_CAPI_EXPORT extern void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor);
 
-    SL_CAPI_EXPORT extern void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,short *mic,short *ref,short * res);
+    SL_CAPI_EXPORT extern int SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,const short *mic,const short *ref,short * res);
 
 
     SL_CAPI_EXPORT extern void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,short *out);
@@ -42,7 +42,7 @@ extern "C"
  *  0: 未识别到唤醒词
  *  -2:数据传输中
  */
-    SL_CAPI_EXPORT extern int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out);
+    SL_CAPI_EXPORT extern int SL_AudioProcessFor16Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out);
 
 /*!
  * 开启语音唤醒功能

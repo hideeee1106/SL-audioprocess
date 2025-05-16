@@ -27,9 +27,10 @@ extern "C" {
 
 class AudioProcess {
 public:
-    const int AEC_BLOCK_SHIFT = 512;
+    const int AEC_BLOCK_SHIFT = 160;
     const int Ns_BLOCK_WINDOWS = (40 << 2);
     const int CaffeLens = 5120;
+    const int Samplerate = 16000;
 //    2560/16000 = 160ms
 
 #if pocketsphinxkws
@@ -37,30 +38,53 @@ public:
     const char *lm_path  = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.lm";
     const char *dict_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.dic";
 #endif
-    vector<short> NkfOutAudioCaffe;
     vector<short> NsOutAudioCaffe;
 public:
     AudioProcess() {
     };
 
-    ~AudioProcess() {};
+    ~AudioProcess() {
+        WebRtcAecm_Free(aecmInst);
+    };
 
-    void Init(const char *model_path) {
-        nkfProcessor = std::make_shared<NKFProcessor>();
+    void Init() {
+
         nsProcessor = std::make_shared<NosieCancel>();
-        nkfProcessor->Aec_Init(model_path);
 
 
+//       webrtc
+        config.cngMode = AecmTrue;
+        config.echoMode = 3;// 0, 1, 2, 3 (default), 4
+        aecmInst = WebRtcAecm_Create();
+        if (aecmInst == NULL)  LOGD("WebRtcAecm_Init fail\n");
+        int status = WebRtcAecm_Init(aecmInst, Samplerate);//8000 or 16000 Sample rate
+        if (status != 0) {
+            LOGD("WebRtcAecm_Init fail\n");
+            WebRtcAecm_Free(aecmInst);
+        }
+        status = WebRtcAecm_set_config(aecmInst, config);
+        if (status != 0) {
+            LOGD("WebRtcAecm_set_config fail\n");
+            WebRtcAecm_Free(aecmInst);
+        }
     }
 
-    short *RunAEC(short *mic, short *ref) {
-        nkfProcessor->enhance(mic, ref);
-        auto out = nkfProcessor->getoutput();
-        return out;
-    }
+    int RunAEC(short *mic, short *ref,short *out_buffer) {
+        if (WebRtcAecm_BufferFarend(aecmInst, ref, AEC_BLOCK_SHIFT) != 0) {
+            printf("WebRtcAecm_BufferFarend() failed.");
+            WebRtcAecm_Free(aecmInst);
+            return -1;
+        }
 
-    void ResetAEC() {
-        nkfProcessor->reset();
+        int nRet = WebRtcAecm_Process(aecmInst, mic, NULL, out_buffer, AEC_BLOCK_SHIFT, msInSndCardBuf);
+
+        if (nRet != 0) {
+            printf("failed in WebRtcAecm_Process\n");
+            WebRtcAecm_Free(aecmInst);
+            return -1;
+        }
+        return 1;
+
     }
 
     float RunNS(short *out, short *in) {
@@ -191,34 +215,18 @@ public:
     }
 
     int Run_Aec_Ns(short *mic, short *ref) {
-//      输入 512  SHORT 音频
-
-        nkfProcessor->enhance(mic, ref);
-        auto nkfout = nkfProcessor->getoutput();
-        for (int i = 0; i < AEC_BLOCK_SHIFT; ++i) {
-            NkfOutAudioCaffe.push_back(nkfout[i]);
+//      输入 160  SHORT 音频
+        short nkfout[160];
+        RunAEC(mic,ref, nkfout);
+        short nsout[160];
+        float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
+        for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+            NsOutAudioCaffe.push_back(nsout[j]);
         }
-        nkfProcessor->reset();
-        size_t N = NkfOutAudioCaffe.size() / Ns_BLOCK_WINDOWS;
-        size_t M = NkfOutAudioCaffe.size() % Ns_BLOCK_WINDOWS;
-
-        for (int i = 0; i < N; ++i) {
-            short NSINPUT[160] = {0};
-            short NSOUTPUT[160] = {0};
-            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                NSINPUT[j] = NkfOutAudioCaffe[j + i * Ns_BLOCK_WINDOWS];
-            }
-            float prob = nsProcessor->rnnoise_process_frame(NSOUTPUT, NSINPUT);
-            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                NsOutAudioCaffe.push_back(NSOUTPUT[j]);
-            }
-        }
-        remove_front_n(NkfOutAudioCaffe, N * Ns_BLOCK_WINDOWS);
-
 #if fsmnkws
-        if( M == 0){
+        if( NsOutAudioCaffe.size() == CaffeLens){
             if (enable_use_kws_){
-                auto start_1=std::chrono::high_resolution_clock::now();
+
                 std::vector<int16_t>kwswavdata(CaffeLens);
                 for (int i = 0; i < CaffeLens; ++i) {
                     kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
@@ -362,7 +370,10 @@ public:
 
 private:
     // 回声消除实例
-    std::shared_ptr<NKFProcessor> nkfProcessor;
+    AecmConfig config;
+    int16_t msInSndCardBuf = 30;
+    void *aecmInst;
+
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
 

@@ -10,7 +10,6 @@
 
 SL_AudioProcesser * SL_CreateAudioProcesser(const char *model_path){
     auto *predict = new SL_AudioProcesser();
-    predict->impl.Init(model_path);
     return predict;
 };
 
@@ -20,24 +19,16 @@ void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor){
     }
 };
 
-void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,short *mic,short *ref,short * res){
-    printf("cd run nkf");
-    auto out = predictor->impl.RunAEC(mic,ref);
-
-
-    for (int i = 0; i < predictor->impl.AEC_BLOCK_SHIFT; ++i) {
-
-        res[i] = out[i];
-//        printf("outdata:%f,",res[i]);
-    }
-    predictor->impl.ResetAEC();
+int SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor, short *mic, short *ref,short * res){
+    int code = predictor->impl.RunAEC(mic,ref,res);
+    return code;
 };
 
 void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,short *out){
     predictor->impl.RunNS(out,in);
 };
 
-int SL_AudioProcessFor8Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out){
+int SL_AudioProcessFor16Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out){
     int code = predictor->impl.Run_Aec_Ns(in,ref);
 //    printf("code:%d\n",code);
     if (code != -2){
