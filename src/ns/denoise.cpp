@@ -161,6 +161,9 @@ static void frame_analysis(DenoiseState *st, kiss_fft_cpx *X, float *Ex, const f
 
 static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cpx *P,
                                   float *Ex, float *Ep, float *Exp, float *features, const float *in) {
+    for (int j=0;j<NB_FEATURES;j++) {
+        printf("features[%d]=%f\n",j, features[j]);
+    }
     int i;
     float E = 0;
     float *ceps_0, *ceps_1, *ceps_2;
@@ -213,14 +216,15 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
         return 1;
     }
     dct(features, Ly);
-    // for (i=0;i<38;i++) printf("features[%d] = %f\n", i, features[i]);
     features[0] -= 12;
     features[1] -= 4;
-    printf("features[%d] = %f\n", 0, features[0]);
     ceps_0 = st->cepstral_mem[st->memid];
     ceps_1 = (st->memid < 1) ? st->cepstral_mem[CEPS_MEM+st->memid-1] : st->cepstral_mem[st->memid-1];
     ceps_2 = (st->memid < 2) ? st->cepstral_mem[CEPS_MEM+st->memid-2] : st->cepstral_mem[st->memid-2];
-    for (i=0;i<38;i++) printf("features[%d] = %f\n", i, features[i]);
+    for (int j=0;j<NB_BANDS;j++) {
+        printf("features[%d] = %f\n", j, features[j]);
+    }
+
     for (i=0;i<NB_BANDS;i++) ceps_0[i] = features[i];
     st->memid++;
     for (i=0;i<NB_DELTA_CEPS;i++) {
@@ -320,6 +324,9 @@ float  NosieCancel::rnnoise_process_frame(short *out, const short *in) {
     static const float b_hp[2] = {-2, 1};
 
     biquad(x, st->mem_hp_x, in, b_hp, a_hp, FRAME_SIZE);
+    for (int j=0;j<NB_FEATURES;j++) {
+        printf("i:%d,features[%d]=%f\n", i,j, features[j]);
+    }
     silence = compute_frame_features(st, X, P, Ex, Ep, Exp, features, x);
 
     if (!silence) {

@@ -86,10 +86,7 @@ public:
     }
 
     void Init() {
-
         nsProcessor = std::make_shared<NosieCancel>();
-
-
 //       webrtc aec
         config.cngMode = AecmTrue;
         config.echoMode = 3;// 0, 1, 2, 3 (default), 4
@@ -417,8 +414,6 @@ private:
     void *agcInst;
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
-
-//    std::shared_ptr<Webrtc>
 
     bool in_speech{false};
     bool enable_use_kws_{false};
