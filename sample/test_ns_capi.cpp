@@ -99,7 +99,7 @@ int main(int argc, char *argv[]){
     }
     argv[1] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
     argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/micns.wav";
-    argv[3] = "";
+    argv[3] = "/home/s4552/CLionProjects/SL-audioprocess/model/rv1106/nkfsim.mnn";
     char *in_file = argv[1];
 
     printf("Start doing noise supreesion\n");
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]){
         SL_EchoNoiseCancelForWav1C16khz(filter,&input[i*160],out);
 
         for (short j : out) {
-            printf("%d\n",j);
+            //printf("%d\n",j);
             outputdata.push_back(float(j)/32768.0);
         }
     }
