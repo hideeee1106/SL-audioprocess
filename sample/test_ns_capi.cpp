@@ -96,48 +96,48 @@ void ExportWAV(
 int main(int argc, char *argv[]){
     if (argc < 3){
         printf("Usage:./testcapi [inputWav] [RNNnoise_output] \n");
-        return -1;
     }
+    argv[1] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
+    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/micns.wav";
+    argv[3] = "";
     char *in_file = argv[1];
-    if (argc == 4) {
-        printf("Start doing noise supreesion\n");
 
-        char *out_file = argv[2];
-        char *model_path = argv[3];
+    printf("Start doing noise supreesion\n");
 
-
-        uint32_t sampleRate = 0;
-        uint64_t sampleCount = 0;
-        uint32_t channels = 0;
-
-        float* buffer = wavRead_f32(in_file, &sampleRate, &sampleCount, &channels);
-        vector<short> input(sampleCount);
-        for (int i = 0; i < sampleCount; ++i) {
-            input[i] = short (buffer[i]);
-        }
-
-        vector<float> outputdata;
-        size_t frames = sampleCount / NN;
+    char *out_file = argv[2];
+    char *model_path = argv[3];
 
 
-        SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
+    uint32_t sampleRate = 0;
+    uint64_t sampleCount = 0;
+    uint32_t channels = 0;
 
-        for (int i = 0; i < frames; ++i) {
-            short out[160] = {0};
-            SL_EchoNoiseCancelForWav1C16khz(filter,&input[i*160],out);
-
-            for (short j : out) {
-                printf("%d\n",j);
-                outputdata.push_back(float(j)/32768.0);
-            }
-        }
-
-        printf("Finished RNNnoise Noise Supression \n");
-
-        ExportWAV(out_file,outputdata,sampleRate);
-        SL_ReleaseAudioProcesser(filter);
-        return 0;
-    } else {
-        printf("Usage:./rnn_gao [inputWav] [outputWav]\n");
+    float* buffer = wavRead_f32(in_file, &sampleRate, &sampleCount, &channels);
+    vector<short> input(sampleCount);
+    for (int i = 0; i < sampleCount; ++i) {
+        input[i] = short (buffer[i]);
     }
+
+    vector<float> outputdata;
+    size_t frames = sampleCount / NN;
+
+
+    SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
+
+    for (int i = 0; i < frames; ++i) {
+        short out[160] = {0};
+        SL_EchoNoiseCancelForWav1C16khz(filter,&input[i*160],out);
+
+        for (short j : out) {
+            printf("%d\n",j);
+            outputdata.push_back(float(j)/32768.0);
+        }
+    }
+
+    printf("Finished RNNnoise Noise Supression \n");
+
+    ExportWAV(out_file,outputdata,sampleRate);
+    SL_ReleaseAudioProcesser(filter);
+    return 0;
+
 }

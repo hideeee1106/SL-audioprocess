@@ -33,11 +33,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
 if(NOT BUILD_IN_R328 AND NOT BUILD_IN_RV1106)
 #    fftw
-    ## linux
-    set(MNN_DIR /home/hideeee/3rparty/MNN/linux/include)
-    set(MNN_LIB_DIR /home/hideeee/3rparty/MNN/linux/lib)
-    include_directories(/home/hideeee/3rparty/fftw3/linux_x86/include)
-    set(FFTW3_LIBRARIES /home/hideeee/3rparty/fftw3/linux_x86/lib/libfftw3f.a)
+
+    set(MNN_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/include)
+    set(MNN_LIB_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/build/express)
+    include_directories(/media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/linux/include)
+    set(FFTW3_LIBRARIES /media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/linux/lib/libfftw3f.a)
 
 elseif (BUILD_IN_RV1106)
     set(MNN_DIR /home/hideeee/3rparty/MNN/build_armv7_rv1106/include)
@@ -93,12 +93,12 @@ target_link_libraries(${LIB_NAME} ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm)
 message("build KARLMAN AEC with MNN on R328 ")
 
 ##build target
-add_executable(TestCAPINKFSample sample/test_nkf_capi.cpp ${COMPILE_FILES})
-target_link_libraries(TestCAPINKFSample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm)
+#add_executable(TestCAPINKFSample sample/test_nkf_capi.cpp ${COMPILE_FILES})
+#target_link_libraries(TestCAPINKFSample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm)
 ##
 ##
-#add_executable(TestCAPINSSample sample/test_ns_capi.cpp ${COMPILE_FILES})
-#target_link_libraries(TestCAPINSSample ${MNN_LIBRARIES})
+add_executable(TestCAPINSSample sample/test_ns_capi.cpp ${COMPILE_FILES})
+target_link_libraries(TestCAPINSSample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES})
 #
 #add_executable(TestCAPISample sample/test_capi_sample.cpp ${COMPILE_FILES})
 #target_link_libraries(TestCAPISample ${MNN_LIBRARIES})
