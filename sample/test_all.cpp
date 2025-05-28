@@ -1,6 +1,7 @@
 //
-// Created by hideeee on 2025/4/9.
+// Created by s4552 on 25-5-28.
 //
+
 #define DR_MP3_IMPLEMENTATION
 #define DR_WAV_IMPLEMENTATION
 #define FRAME_SIZE 160
@@ -12,7 +13,7 @@
 #include "../src/ns/dr_mp3.h"
 #include "../src/ns/dr_wav.h"
 #include "AudioFile.h"
-#define NN 160
+
 
 #ifndef nullptr
 #define nullptr 0
@@ -89,49 +90,68 @@ void ExportWAV(
     File.setNumSamplesPerChannel((int)BufSz);
     File.setNumChannels(1);
     File.setBitDepth(16);
-    File.setSampleRate(8000);
+    File.setSampleRate(SampleRate);
     File.save(Filename, AudioFileFormat::Wave);
 }
 
 int main(int argc, char *argv[]){
-    argv[1] ="/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
-    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/misns.wav";
-    if (argc < 2){
-        printf("Usage:./testcapi [inputWav] [RNNnoise_output] \n");
-    }
+    // if (argc < 5){
+    //     printf("Usage:./testcapi [inputWav] [RNNnoise_output] \n");
+    //     return -1;
+    // }
+    argv[1] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
+    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
     char *in_file = argv[1];
+    char *ref_file = argv[2];
 
     printf("Start doing noise supreesion\n");
 
-    char *out_file = argv[2];
+    argv[3] = "/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
+    char *out_file = argv[3];
 
-    uint32_t sampleRate = 0;
-    uint64_t sampleCount = 0;
-    uint32_t channels = 0;
 
-    float* buffer = wavRead_f32(in_file, &sampleRate, &sampleCount, &channels);
-    vector<short> input(sampleCount);
-    for (int i = 0; i < sampleCount; ++i) {
-        input[i] = short (buffer[i]);
+    uint32_t micsampleRate = 0;
+    uint64_t micsampleCount = 0;
+    uint32_t micchannels = 0;
+    float* micbuffer = wavRead_f32(in_file, &micsampleRate, &micsampleCount, &micchannels);
+    vector<short> micinput(micsampleCount);
+    for (int i = 0; i < micsampleCount; ++i) {
+        micinput[i] = short (micbuffer[i]);
     }
 
+    uint32_t refsampleRate = 0;
+    uint64_t refsampleCount = 0;
+    uint32_t refchannels = 0;
+    float* refbuffer = wavRead_f32(ref_file, &refsampleRate, &refsampleCount, &refchannels);
+    vector<short> refinput(refsampleCount);
+    for (int i = 0; i < refsampleCount; ++i) {
+        refinput[i] = short (refbuffer[i]);
+    }
+
+
     vector<float> outputdata;
-    size_t frames = sampleCount / NN;
+    size_t frames = micsampleCount / 512;
+
+
     SL_AudioProcesser* filter = SL_CreateAudioProcesser();
 
+    short out[512*5] = {0};
+    int code;
     for (int i = 0; i < frames; ++i) {
-        short out[160] = {0};
-        SL_EchoNoiseCancelForWav1C16khz(filter,&input[i*160],out);
 
-        for (short j : out) {
-            printf("%d\n",j);
-            outputdata.push_back(float(j)/32768.0);
+        code = SL_AudioProcessFor16Khz(filter,&micinput[i*512],&refinput[i*512],out);
+        if (code == 1){
+            for (short j : out) {
+//                printf("%d\n,",j);
+                outputdata.push_back(float(j)/32768.0);
+            }
         }
+
     }
 
     printf("Finished RNNnoise Noise Supression \n");
 
-    ExportWAV(out_file,outputdata,sampleRate);
+    ExportWAV(out_file,outputdata,16000);
     SL_ReleaseAudioProcesser(filter);
     return 0;
 

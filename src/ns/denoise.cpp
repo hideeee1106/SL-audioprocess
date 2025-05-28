@@ -213,11 +213,14 @@ static int compute_frame_features(DenoiseState *st, kiss_fft_cpx *X, kiss_fft_cp
         return 1;
     }
     dct(features, Ly);
+    // for (i=0;i<38;i++) printf("features[%d] = %f\n", i, features[i]);
     features[0] -= 12;
     features[1] -= 4;
+    printf("features[%d] = %f\n", 0, features[0]);
     ceps_0 = st->cepstral_mem[st->memid];
     ceps_1 = (st->memid < 1) ? st->cepstral_mem[CEPS_MEM+st->memid-1] : st->cepstral_mem[st->memid-1];
     ceps_2 = (st->memid < 2) ? st->cepstral_mem[CEPS_MEM+st->memid-2] : st->cepstral_mem[st->memid-2];
+    for (i=0;i<38;i++) printf("features[%d] = %f\n", i, features[i]);
     for (i=0;i<NB_BANDS;i++) ceps_0[i] = features[i];
     st->memid++;
     for (i=0;i<NB_DELTA_CEPS;i++) {

@@ -25,7 +25,7 @@ extern "C"
 
     typedef struct SL_AudioProcesser SL_AudioProcesser;
     //    SL_CAPI_EXPORT extern int
-    SL_CAPI_EXPORT extern SL_AudioProcesser * SL_CreateAudioProcesser(const char *model_path);
+    SL_CAPI_EXPORT extern SL_AudioProcesser * SL_CreateAudioProcesser();
 
     SL_CAPI_EXPORT extern void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor);
 

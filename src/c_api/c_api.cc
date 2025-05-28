@@ -8,8 +8,9 @@
 
 
 
-SL_AudioProcesser * SL_CreateAudioProcesser(const char *model_path){
+SL_AudioProcesser * SL_CreateAudioProcesser(){
     auto *predict = new SL_AudioProcesser();
+    predict->impl.Init();
     return predict;
 };
 
@@ -29,7 +30,7 @@ void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,shor
 };
 
 int SL_AudioProcessFor16Khz(SL_AudioProcesser *predictor,short *in,short *ref,short *out){
-    int code = predictor->impl.Run_Aec_Ns(in,ref);
+    int code = predictor->impl.Run_ALL(in,ref);
 //    printf("code:%d\n",code);
     if (code != -2){
 

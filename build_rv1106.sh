@@ -8,8 +8,8 @@ if [[ ! -d "${BUILD_DIR}" ]]; then
   mkdir -p ${BUILD_DIR}
 fi
 
-GCC_COMPILER=/home/hideeee/3rparty/arm-rockchip830-linux-uclibcgnueabihf/bin/arm-rockchip830-linux-uclibcgnueabihf
-export STAGING_DIR=/home/hideeee/3rparty/arm-rockchip830-linux-uclibcgnueabihf/
+GCC_COMPILER=/home/s4552/cross-compilation-toolchain/arm-rk-linux-toolchain/bin/arm-rockchip830-linux-uclibcgnueabihf
+export STAGING_DIR=/home/s4552/cross-compilation-toolchain/arm-rk-linux-toolchain/
 
 
 

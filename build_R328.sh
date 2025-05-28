@@ -8,8 +8,8 @@ if [[ ! -d "${BUILD_DIR}" ]]; then
   mkdir -p ${BUILD_DIR}
 fi
 
-GCC_COMPILER=/home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/bin/arm-openwrt-linux-muslgnueabi
-export STAGING_DIR=/home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/
+GCC_COMPILER=/media/s4552/F3CF5497F0925C7D/3rdparty/toolchain-sunxi-musl/toolchain/bin/arm-openwrt-linux-muslgnueabi
+export STAGING_DIR=/media/s4552/F3CF5497F0925C7D/3rparty/toolchain-sunxi-musl/toolchain/
 
 
 

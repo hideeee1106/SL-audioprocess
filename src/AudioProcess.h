@@ -11,6 +11,7 @@
 #include "nkf/neural_karlman_filter.h"
 #include "ns/denoise.h"
 #include "aecm/echo_control_mobile.h"
+#include "agc/agc.h"
 
 #define pocketsphinxkws 0
 #define fsmnkws 1
@@ -24,6 +25,43 @@ extern "C" {
     #include <pocketsphinx.h>
 }
 #endif
+
+static void remove_front_n(std::vector<short> &vec, size_t n) {
+    if (n == 0 || vec.empty()) return;
+
+    if (n >= vec.size()) {
+        vec.clear();
+        return;
+    }
+
+    std::move(vec.begin() + n, vec.end(), vec.begin());
+    vec.resize(vec.size() - n);
+}
+
+// 简单能量 + 过零率判断
+static int simple_vad_int16_5120(const short *input, int len) {
+    if (len != 5120) return 0;
+
+    double energy = 0.0;
+    int zero_crossings = 0;
+
+    for (int i = 0; i < len; i++) {
+        energy += input[i] * input[i];  // 累加能量
+        if (i > 0 && ((input[i - 1] >= 0 && input[i] < 0) || (input[i - 1] < 0 && input[i] >= 0))) {
+            zero_crossings++;  // 过零点检测
+        }
+    }
+
+    energy /= len;  // 均方能量
+    float zcr = (float) zero_crossings / len;
+    //        printf("energy:%f,zcr:%f\n",energy,zcr);
+    // === 阈值可调 ===
+    if (energy > 50000.0) {
+        return 1; // 有语音
+    } else {
+        return 0; // 无语音
+    }
+}
 
 class AudioProcess {
 public:
@@ -40,19 +78,19 @@ public:
 #endif
     vector<short> NsOutAudioCaffe;
 public:
-    AudioProcess() {
-    };
+    AudioProcess() {}
 
     ~AudioProcess() {
         WebRtcAecm_Free(aecmInst);
-    };
+        WebRtcAecm_Free(agcInst);
+    }
 
     void Init() {
 
         nsProcessor = std::make_shared<NosieCancel>();
 
 
-//       webrtc
+//       webrtc aec
         config.cngMode = AecmTrue;
         config.echoMode = 3;// 0, 1, 2, 3 (default), 4
         aecmInst = WebRtcAecm_Create();
@@ -67,11 +105,32 @@ public:
             LOGD("WebRtcAecm_set_config fail\n");
             WebRtcAecm_Free(aecmInst);
         }
+
+    //webrtc agc
+        agcConfig.compressionGaindB = 9; // default 9 dB
+        agcConfig.limiterEnable = 1; // default kAgcTrue (on)
+        agcConfig.targetLevelDbfs = 3; // default 3 (-3 dBOv)
+        int minLevel = 0;
+        int maxLevel = 255;
+        short agcMode = kAgcModeAdaptiveDigital;
+        agcInst = WebRtcAgc_Create();
+        if (agcInst == NULL)  LOGD("WebRtcAgc_Init fail\n");
+        status = WebRtcAgc_Init(agcInst, minLevel, maxLevel, agcMode, 16000);
+        if (status != 0) {
+            LOGD("WebRtcAgc_Init fail\n");
+            WebRtcAgc_Free(agcInst);
+        }
+        status = WebRtcAgc_set_config(agcInst, agcConfig);
+        if (status != 0) {
+            LOGD("WebRtcAgc_set_config fail\n");
+            WebRtcAgc_Free(agcInst);
+        }
+
     }
 
     int RunAEC(short *mic, short *ref,short *out_buffer) {
         if (WebRtcAecm_BufferFarend(aecmInst, ref, AEC_BLOCK_SHIFT) != 0) {
-            printf("WebRtcAecm_BufferFarend() failed.");
+            LOGD("WebRtcAecm_BufferFarend() failed.\n");
             WebRtcAecm_Free(aecmInst);
             return -1;
         }
@@ -79,7 +138,7 @@ public:
         int nRet = WebRtcAecm_Process(aecmInst, mic, NULL, out_buffer, AEC_BLOCK_SHIFT, msInSndCardBuf);
 
         if (nRet != 0) {
-            printf("failed in WebRtcAecm_Process\n");
+            LOGD("failed in WebRtcAecm_Process\n");
             WebRtcAecm_Free(aecmInst);
             return -1;
         }
@@ -87,146 +146,46 @@ public:
 
     }
 
+    int RunAGC(short *input,short * out) {
+        size_t num_bands = 1;
+        int inMicLevel, outMicLevel = -1;
+        int16_t out_buffer[320];
+        int16_t *out16 = out_buffer;
+        uint8_t saturationWarning = 1;                 //是否有溢出发生，增益放大以后的最大值超过了65536
+        int16_t echo = 0;                                 //增益放大是否考虑回声影响
+        int nAgcRet = WebRtcAgc_Process(agcInst, (const int16_t *const *) &input, num_bands, 160,
+                                                (int16_t *const *) &out16, inMicLevel, &outMicLevel, echo,
+                                                &saturationWarning);
+
+        if (nAgcRet != 0) {
+            printf("failed in WebRtcAgc_Process\n");
+            WebRtcAgc_Free(agcInst);
+            return -1;
+        }return 1;
+    }
+
     float RunNS(short *out, short *in) {
         float prob = nsProcessor->rnnoise_process_frame(out, in);
         return prob;
     }
 
-    static void remove_front_n(std::vector<short> &vec, size_t n) {
-        if (n == 0 || vec.empty()) return;
-
-        if (n >= vec.size()) {
-            vec.clear();
-            return;
-        }
-
-        std::move(vec.begin() + n, vec.end(), vec.begin());
-        vec.resize(vec.size() - n);
-    }
-
-    // 简单能量 + 过零率判断
-    static int simple_vad_int16_5120(const short *input, int len) {
-        if (len != 5120) return 0;
-
-        double energy = 0.0;
-        int zero_crossings = 0;
-
-        for (int i = 0; i < len; i++) {
-            energy += input[i] * input[i];  // 累加能量
-            if (i > 0 && ((input[i - 1] >= 0 && input[i] < 0) || (input[i - 1] < 0 && input[i] >= 0))) {
-                zero_crossings++;  // 过零点检测
-            }
-        }
-
-        energy /= len;  // 均方能量
-        float zcr = (float) zero_crossings / len;
-//        printf("energy:%f,zcr:%f\n",energy,zcr);
-        // === 阈值可调 ===
-        if (energy > 50000.0) {
-            return 1; // 有语音
-        } else {
-            return 0; // 无语音
-        }
-    }
-
-    int run_kws(const short *wav){
-        std::vector<int16_t>kwswavdata(CaffeLens);
-        for (int i = 0; i < CaffeLens; ++i) {
-            kwswavdata[i] = static_cast<int16_t>(wav[i]);
-
-        }
-        int code = kwspoint->run(kwswavdata);
-
-        return code;
-    }
-
-
-    int run_kws_ns(short *audio){
-//        printf("run kws ns\n");
-        for (int i = 0; i < 32; ++i) {
-            short out[160] = {0};
-            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
-            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                NsOutAudioCaffe.push_back(out[j]);
-            }
-        }
-
-        if(NsOutAudioCaffe.size() == 5120){
-            std::vector<int16_t>kwswavdata(CaffeLens);
-            for (int i = 0; i < CaffeLens; ++i) {
-                kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
-
-            }
-            NsOutAudioCaffe.clear();
-            int code = kwspoint->run(kwswavdata);
-            return code;
-        } else{
-            return -2;
-        }
-
-    }
-
-    int demo(short *audio,int vad){
-//        512
-        for (int i = 0; i < 32; ++i) {
-            short out[160] = {0};
-            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
-            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                NsOutAudioCaffe.push_back(out[j]);
-            }
-        }
-
-        if(NsOutAudioCaffe.size() == 5120){
-
-            int silence = simple_vad_int16_5120(&NsOutAudioCaffe[0],5120);
-            if(silence == 1){
-                in_speech = true;
-            }
-            printf("vad code = %d,silence = %d,in_speech = %d\n",vad,silence,in_speech);
-            if(vad and in_speech){
-                count = count + 1 ;
-                if(silence == 1){
-                    last_voice_count = count;
-                }
-                printf("last_voice_count = %d,count = %d\n",last_voice_count,count);
-                if (silence == 0 and count - last_voice_count >= 2){
-                    count = 0;
-                    last_voice_count = 0;
-                    in_speech = false;
-                    return 3;
-                }
-            }
-
-            std::vector<int16_t>kwswavdata(CaffeLens);
-            for (int i = 0; i < CaffeLens; ++i) {
-                kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
-
-            }
-            NsOutAudioCaffe.clear();
-            int code = kwspoint->run(kwswavdata);
-            if(code == 1){
-                in_speech = false;
-            }
-            return code;
-        } else{
-            return -2;
-        }
-
-    }
-
-    int Run_Aec_Ns(short *mic, short *ref) {
+     int Run_ALL(short *mic, short *ref) {
 //      输入 160  SHORT 音频
         short nkfout[160];
         RunAEC(mic,ref, nkfout);
         short nsout[160];
         float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
+        printf("123\n");
+        short agcout[160];
+        RunAGC(nsout,agcout);
         for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-            NsOutAudioCaffe.push_back(nsout[j]);
+            NsOutAudioCaffe.push_back(agcout[j]);
         }
+
+
 #if fsmnkws
         if( NsOutAudioCaffe.size() == CaffeLens){
             if (enable_use_kws_){
-
                 std::vector<int16_t>kwswavdata(CaffeLens);
                 for (int i = 0; i < CaffeLens; ++i) {
                     kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
@@ -234,12 +193,10 @@ public:
 
                int code = kwspoint->run(kwswavdata);
                return code;
-            } else{
-                return -1;
             }
-        } else{
-            return -2;
+            return -1;
         }
+return -2;
 #endif
 
 #if pocketsphinxkws
@@ -309,6 +266,87 @@ public:
 
     };
 
+    int run_kws(const short *wav){
+        std::vector<int16_t>kwswavdata(CaffeLens);
+        for (int i = 0; i < CaffeLens; ++i) {
+            kwswavdata[i] = static_cast<int16_t>(wav[i]);
+
+        }
+        int code = kwspoint->run(kwswavdata);
+
+        return code;
+    }
+
+    int run_kws_ns(short *audio){
+//        printf("run kws ns\n");
+        for (int i = 0; i < 32; ++i) {
+            short out[160] = {0};
+            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
+            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                NsOutAudioCaffe.push_back(out[j]);
+            }
+        }
+
+        if(NsOutAudioCaffe.size() == 5120){
+            std::vector<int16_t>kwswavdata(CaffeLens);
+            for (int i = 0; i < CaffeLens; ++i) {
+                kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
+
+            }
+            NsOutAudioCaffe.clear();
+            int code = kwspoint->run(kwswavdata);
+            return code;
+        }return -2;
+    }
+
+    int demo(short *audio,int vad){
+//        512
+        for (int i = 0; i < 32; ++i) {
+            short out[160] = {0};
+            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
+            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                NsOutAudioCaffe.push_back(out[j]);
+            }
+        }
+
+        if(NsOutAudioCaffe.size() == 5120){
+
+            int silence = simple_vad_int16_5120(&NsOutAudioCaffe[0],5120);
+            if(silence == 1){
+                in_speech = true;
+            }
+            printf("vad code = %d,silence = %d,in_speech = %d\n",vad,silence,in_speech);
+            if(vad and in_speech){
+                count = count + 1 ;
+                if(silence == 1){
+                    last_voice_count = count;
+                }
+                printf("last_voice_count = %d,count = %d\n",last_voice_count,count);
+                if (silence == 0 and count - last_voice_count >= 2){
+                    count = 0;
+                    last_voice_count = 0;
+                    in_speech = false;
+                    return 3;
+                }
+            }
+
+            std::vector<int16_t>kwswavdata(CaffeLens);
+            for (int i = 0; i < CaffeLens; ++i) {
+                kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
+
+            }
+            NsOutAudioCaffe.clear();
+            int code = kwspoint->run(kwswavdata);
+            if(code == 1){
+                in_speech = false;
+            }
+            return code;
+        } else{
+            return -2;
+        }
+
+    }
+
     short *getOutputs() {
         return NsOutAudioCaffe.data();
     }
@@ -374,6 +412,9 @@ private:
     int16_t msInSndCardBuf = 30;
     void *aecmInst;
 
+// agc
+    WebRtcAgcConfig agcConfig;
+    void *agcInst;
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
 
