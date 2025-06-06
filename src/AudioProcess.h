@@ -183,7 +183,7 @@ public:
 //      输入 5120  SHORT 音频
         for (int i=0;i<32;i++) {
             short nkfout[160];
-            RunAEC(mic+i*160,ref, nkfout);
+            RunAEC(mic+i*160,ref+i*160, nkfout);
 
             short nsout[160];
             float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
