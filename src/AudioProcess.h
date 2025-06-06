@@ -178,26 +178,28 @@ public:
      int Run_ALL(short *mic, short *ref) {
         using namespace std::chrono;
         auto start = high_resolution_clock::now();
-//      输入 160  SHORT 音频
-        short nkfout[160];
-        RunAEC(mic,ref, nkfout);
-        auto end1 = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(end1 - start);
 
-        std::cout << "耗时: " << duration.count() << " ms" << std::endl;
-        short nsout[160];
-        float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
-        auto end2 = high_resolution_clock::now();
-        auto duration2 = duration_cast<milliseconds>(end2 - end1);
-        std::cout << "耗时: " << duration2.count() << " ms" << std::endl;
-        RunAGC(nsout);
-        auto end3 = high_resolution_clock::now();
-        auto duration3 = duration_cast<milliseconds>(end3 - end2);
-        std::cout << "耗时: " << duration3.count() << " ms" << std::endl;
 
-        for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-            NsOutAudioCaffe.push_back(nsout[j]);
+//      输入 5120  SHORT 音频
+        for (int i=0;i<32;i++) {
+            short nkfout[160];
+            RunAEC(mic+i*160,ref, nkfout);
+
+            short nsout[160];
+            float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
+            RunAGC(nsout);
+
+            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                NsOutAudioCaffe.push_back(nsout[j]);
+            }
+
         }
+
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(end - start);
+        std::cout << "耗时: " << duration.count() << " ms" << std::endl;
+
+
 
 
 #if fsmnkws
