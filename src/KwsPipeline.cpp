@@ -48,19 +48,15 @@ int KwsPipeline::run(const std::vector<int16_t> &wav)
     while (true) {
         std::vector<std::vector<float>> feats;
         bool ok = featurePipeline.Read(input_batch_size, &feats);
-//        printf("feats:%f\n",feats[0][0]);
+        // printf("feats:%f\n",feats[0][0]);
 
         std::vector<std::vector<float>> prob;
         spotter_pipe.Forward(feats, &prob);
 
         postDecoder.decode(prob);
-
         // Reach the end of feature pipeline
         if (!ok) break;
         offset += prob.size();
-
-
-
     }
 
     int result_idx= postDecoder.match_and_output();

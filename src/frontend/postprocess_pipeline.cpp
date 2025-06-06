@@ -15,7 +15,7 @@ void PostDecoder::decode(const std::vector<std::vector<float>> &probs) {
         if (max_idx != 0 && (decoded_seq.empty() || max_idx != decoded_seq.back())&&frame_probs[max_idx]>thersh_score) //
         {
             decoded_seq.push_back(max_idx);
-            std::cout<<"token_idx:"<<max_idx<<" score:"<<frame_probs[max_idx]<<std::endl;
+            // std::cout<<"token_idx:"<<max_idx<<" score:"<<frame_probs[max_idx]<<std::endl;
         }
     }
 
@@ -88,15 +88,20 @@ int PostDecoder::match_and_output(){
         }
     }
 
+
     for (const auto & i : default_keywords_seq) {
         int code = isSubArray(i,decoded_seq);
-        if (i[0] == 2494) {
-            //小问  开始录音
-            printf("开始录音\n");
-            return 2;
-        }
         if (code ==1 ){
-            // printf("<i[0]>=%d\n",i[0]);
+
+            if (decoded_seq.size() == 1) {
+                if (decoded_seq[0] == 2494) {
+                    return 2;
+                }
+            }else if (decoded_seq.size() == 2){
+                if (decoded_seq[1] == 2494) {
+                    return 2;
+                }
+            }
             printf("识别到唤醒词\n");
             return 1;
         }

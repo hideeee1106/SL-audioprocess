@@ -176,9 +176,9 @@ public:
     }
 
      int Run_ALL(short *mic, short *ref) {
-        using namespace std::chrono;
-        auto start = high_resolution_clock::now();
-
+        // using namespace std::chrono;
+        // auto start = high_resolution_clock::now();
+        //
 
 //      输入 5120  SHORT 音频
         for (int i=0;i<32;i++) {
@@ -194,10 +194,10 @@ public:
             }
 
         }
-
-        auto end = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(end - start);
-        std::cout << "耗时: " << duration.count() << " ms" << std::endl;
+        //
+        // auto end = high_resolution_clock::now();
+        // auto duration = duration_cast<milliseconds>(end - start);
+        // std::cout << "耗时: " << duration.count() << " ms" << std::endl;
 
 
 
@@ -315,18 +315,20 @@ public:
     }
 
     int demo(short *mic,short *ref,int vad){
-        //      输入 160  SHORT 音频
-        short nkfout[160];
-        RunAEC(mic,ref, nkfout);
-        short nsout[160];
-        float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
+        //      输入 5120  SHORT 音频
+        for (int i=0;i<32;i++) {
+            short nkfout[160];
+            RunAEC(mic+i*160,ref+i*160, nkfout);
 
+            short nsout[160];
+            float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
+            RunAGC(nsout);
 
-        RunAGC(nsout);
-        for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-            NsOutAudioCaffe.push_back(nsout[j]);
+            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                NsOutAudioCaffe.push_back(nsout[j]);
+            }
+
         }
-
 
         if(NsOutAudioCaffe.size() == 5120){
 
@@ -356,14 +358,12 @@ public:
             }
             NsOutAudioCaffe.clear();
             int code = kwspoint->run(kwswavdata);
-            if(code == 1){
+            if(code == 2){
                 in_speech = false;
             }
             return code;
-        } else{
-            return -2;
         }
-
+        return -2;
     }
 
     short *getOutputs() {
