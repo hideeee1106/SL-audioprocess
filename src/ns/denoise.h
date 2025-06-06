@@ -80,7 +80,9 @@ class NosieCancel {
 
 public:
     NosieCancel(){
-        st = (DenoiseState*)malloc(sizeof(DenoiseState)); // 分配内存
+        st = (DenoiseState*)calloc(1, sizeof(DenoiseState));  // 分配并清零
+
+        // st = (DenoiseState*)malloc(sizeof(DenoiseState)); // 分配内存
     };
     ~NosieCancel(){
         free(st);  // 释放内存

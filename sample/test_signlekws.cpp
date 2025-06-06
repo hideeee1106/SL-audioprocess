@@ -81,8 +81,7 @@ int main(int argc, char *argv[]){
 
 //    char *in_file = "/mnt/UDISK/raw_audio_01.wav";;
 //    char *model_path = "/tmp/lib/nkfsim.mnn";
-    char *in_file = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/resource/raw_audio_01.wav";;
-    char *model_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/MODEL/nkfsim.mnn";
+    char *in_file = "/home/s4552/CLionProjects/SL-audioprocess/resource/record_20250428_15_10_35.wav";;
 
 
 
@@ -100,9 +99,9 @@ int main(int argc, char *argv[]){
     size_t frames = micsampleCount / 5120;
     printf("count:%zu\n",frames);
 
-    SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
-    SL_AudioOpenKWS(filter,"/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/MODEL/avg_30.mnn",
-                    "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/MODEL/tokens.txt");
+    SL_AudioProcesser* filter = SL_CreateAudioProcesser();
+    SL_AudioOpenKWS(filter,"/home/s4552/CLionProjects/SL-audioprocess/model/rv1106/avg_30.mnn",
+                    "/home/s4552/CLionProjects/SL-audioprocess/model/rv1106/tokens.txt");
 
     int code;
     for (int i = 0; i < frames; ++i) {

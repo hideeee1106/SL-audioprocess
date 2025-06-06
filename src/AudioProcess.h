@@ -12,6 +12,8 @@
 #include "ns/denoise.h"
 #include "aecm/echo_control_mobile.h"
 #include "agc/agc.h"
+#include <chrono>
+
 
 #define pocketsphinxkws 0
 #define fsmnkws 1
@@ -82,7 +84,7 @@ public:
 
     ~AudioProcess() {
         WebRtcAecm_Free(aecmInst);
-        WebRtcAecm_Free(agcInst);
+        WebRtcAgc_Free(agcInst);
     }
 
     void Init() {
@@ -143,9 +145,15 @@ public:
 
     }
 
-    int RunAGC(short *input,short * out) {
+    void releaseAEC() {
+
+    }
+
+
+    int RunAGC(short *input) {
         size_t num_bands = 1;
-        int inMicLevel, outMicLevel = -1;
+        int inMicLevel = 0;
+        int outMicLevel = -1;
         int16_t out_buffer[320];
         int16_t *out16 = out_buffer;
         uint8_t saturationWarning = 1;                 //是否有溢出发生，增益放大以后的最大值超过了65536
@@ -158,7 +166,8 @@ public:
             printf("failed in WebRtcAgc_Process\n");
             WebRtcAgc_Free(agcInst);
             return -1;
-        }return 1;
+        }
+        return 1;
     }
 
     float RunNS(short *out, short *in) {
@@ -167,16 +176,27 @@ public:
     }
 
      int Run_ALL(short *mic, short *ref) {
+        using namespace std::chrono;
+        auto start = high_resolution_clock::now();
 //      输入 160  SHORT 音频
         short nkfout[160];
         RunAEC(mic,ref, nkfout);
+        auto end1 = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(end1 - start);
+
+        std::cout << "耗时: " << duration.count() << " ms" << std::endl;
         short nsout[160];
         float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
-        printf("123\n");
-        short agcout[160];
-        RunAGC(nsout,agcout);
+        auto end2 = high_resolution_clock::now();
+        auto duration2 = duration_cast<milliseconds>(end2 - end1);
+        std::cout << "耗时: " << duration2.count() << " ms" << std::endl;
+        RunAGC(nsout);
+        auto end3 = high_resolution_clock::now();
+        auto duration3 = duration_cast<milliseconds>(end3 - end2);
+        std::cout << "耗时: " << duration3.count() << " ms" << std::endl;
+
         for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-            NsOutAudioCaffe.push_back(agcout[j]);
+            NsOutAudioCaffe.push_back(nsout[j]);
         }
 
 
@@ -187,13 +207,11 @@ public:
                 for (int i = 0; i < CaffeLens; ++i) {
                     kwswavdata[i] = static_cast<int16_t>(NsOutAudioCaffe[i]);
                 }
-
                int code = kwspoint->run(kwswavdata);
                return code;
             }
             return -1;
-        }
-return -2;
+        }return -2;
 #endif
 
 #if pocketsphinxkws
@@ -259,9 +277,7 @@ return -2;
             return 0;
         }
 #endif
-
-
-    };
+    }
 
     int run_kws(const short *wav){
         std::vector<int16_t>kwswavdata(CaffeLens);
@@ -296,15 +312,19 @@ return -2;
         }return -2;
     }
 
-    int demo(short *audio,int vad){
-//        512
-        for (int i = 0; i < 32; ++i) {
-            short out[160] = {0};
-            float prob = nsProcessor->rnnoise_process_frame(out,audio+i*160);
-            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                NsOutAudioCaffe.push_back(out[j]);
-            }
+    int demo(short *mic,short *ref,int vad){
+        //      输入 160  SHORT 音频
+        short nkfout[160];
+        RunAEC(mic,ref, nkfout);
+        short nsout[160];
+        float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
+
+
+        RunAGC(nsout);
+        for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+            NsOutAudioCaffe.push_back(nsout[j]);
         }
+
 
         if(NsOutAudioCaffe.size() == 5120){
 

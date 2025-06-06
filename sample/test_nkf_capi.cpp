@@ -1,11 +1,13 @@
 //
 // Created by hideeee on 2025/4/2.
 //
-
+#include <limits>
 #include "AudioFile.h"
 #include "../src/c_api/c_api.h"
 #include "../src/c_api/c_api_define.h"
 #include <iostream>
+
+
 
 void ExportWAV(
         const std::string & Filename,
@@ -32,12 +34,12 @@ int main(int argc, char *argv[]){
     {
         printf("Usage:%s model_path mic_input_path ref_path\n", argv[0]);
     }
-    char *model_path = "/oem/usr/lib/nkfsim.mnn";
-    char *in_audio = "/data/mic.wav";
-    char *lpb_audio = "/data/ref.wav";
-    char *out_audio_wav ="/data/out.wav";
 
-    SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
+    char *in_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
+    char *lpb_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
+    char *out_audio_wav ="/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
+
+    SL_AudioProcesser* filter = SL_CreateAudioProcesser();
 
     AudioFile<float> inputfile;
     inputfile.load(in_audio);
@@ -49,7 +51,7 @@ int main(int argc, char *argv[]){
     int audiolen=inputfile.getNumSamplesPerChannel();
     int audiolen2=inputlpbfile.getNumSamplesPerChannel();
     audiolen =audiolen2<audiolen ? audiolen2:audiolen;
-    int shiftlens = 512;
+    int shiftlens = 160;
     int process_num=audiolen/shiftlens;
 
 
@@ -66,17 +68,17 @@ int main(int argc, char *argv[]){
     printf("%d\n",audiolen);
     for (int i = 0; i < process_num; ++i) {
         printf("i=%d\n",i);
-        short outputs[512] = {0};
+        short outputs[160] = {0};
 
         SL_EchoCancelFilterForWav1C16khz(filter,&in[i*shiftlens],&lpb[i*shiftlens],outputs);
 
         for(int j = 0;j<shiftlens;++j){
-//            printf("%d\n",outputs[j]);
+            printf("%d\n",outputs[j]);
             outputdata.push_back(float(outputs[j])/32768.0);    //for one forward process save first BLOCK_SHIFT model output samples
         }
     }
 
-    ExportWAV(out_audio_wav,outputdata,16000);
+    ExportWAV(out_audio_wav,outputdata,8000);
 
     SL_ReleaseAudioProcesser(filter);
 

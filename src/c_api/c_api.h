@@ -29,7 +29,7 @@ extern "C"
 
     SL_CAPI_EXPORT extern void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor);
 
-    SL_CAPI_EXPORT extern int SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,const short *mic,const short *ref,short * res);
+    SL_CAPI_EXPORT extern int SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor, short *mic, short *ref,short * res);
 
 
     SL_CAPI_EXPORT extern void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,short *out);
@@ -37,7 +37,8 @@ extern "C"
 /*!
  * AEC + 降噪算法
  * * @return 返回指令编号
- *  1: 唤醒词 识别到小问小问
+ *  2： 识别到小问 开始录音
+ *  1: 唤醒词 识别到小林
  *  -1:没有开启唤醒词，降噪和回声消除都完成了
  *  0: 未识别到唤醒词
  *  -2:数据传输中
@@ -57,7 +58,7 @@ extern "C"
     SL_CAPI_EXPORT extern int SL_Audio_kws_ns(SL_AudioProcesser *predictor,short *audio);
     SL_CAPI_EXPORT extern int SL_Audio_signle_kws(SL_AudioProcesser *predictor,short *audio);
 
-    SL_CAPI_EXPORT extern int SL_Audio_demo(SL_AudioProcesser *predictor,short *in,short *out,int vadcode);
+    SL_CAPI_EXPORT extern int SL_Audio_demo(SL_AudioProcesser *predictor,short *in,short *ref,short *out,int vadcode);
 #ifdef __cplusplus
 }
 #endif

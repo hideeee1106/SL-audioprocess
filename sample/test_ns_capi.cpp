@@ -95,7 +95,7 @@ void ExportWAV(
 
 int main(int argc, char *argv[]){
     argv[1] ="/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
-    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/misns.wav";
+    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/micns.wav";
     if (argc < 2){
         printf("Usage:./testcapi [inputWav] [RNNnoise_output] \n");
     }

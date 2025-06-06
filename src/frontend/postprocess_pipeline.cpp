@@ -71,8 +71,7 @@ int PostDecoder::read_token(const std::string &token_file) {
     return -1;
 }
 
-int PostDecoder::match_and_output()
-{
+int PostDecoder::match_and_output(){
 
 
     //输出检测结果
@@ -91,7 +90,13 @@ int PostDecoder::match_and_output()
 
     for (const auto & i : default_keywords_seq) {
         int code = isSubArray(i,decoded_seq);
+        if (i[0] == 2494) {
+            //小问  开始录音
+            printf("开始录音\n");
+            return 2;
+        }
         if (code ==1 ){
+            // printf("<i[0]>=%d\n",i[0]);
             printf("识别到唤醒词\n");
             return 1;
         }

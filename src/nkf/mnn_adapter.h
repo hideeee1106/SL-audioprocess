@@ -5,18 +5,20 @@
 #ifndef NKF_MNN_DEPLOY_R328_MNN_ADAPTER_H
 #define NKF_MNN_DEPLOY_R328_MNN_ADAPTER_H
 
-#include <MNN/ImageProcess.hpp>
-#include <MNN/Interpreter.hpp>
-#include <MNN/MNNDefine.h>
-#include <MNN/Tensor.hpp>
-#include <MNN/MNNForwardType.h>
-
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include "../model_loader/model_loader.h"
 #include <sys/syslog.h>
 #include <chrono>
+
+#include <MNN/ImageProcess.hpp>
+#include <MNN/Interpreter.hpp>
+#include <MNN/MNNDefine.h>
+#include <MNN/Tensor.hpp>
+#include <MNN/MNNForwardType.h>
+
+
 
 class MNNAudioAdapter {
 public:

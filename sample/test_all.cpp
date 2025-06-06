@@ -95,18 +95,19 @@ void ExportWAV(
 }
 
 int main(int argc, char *argv[]){
-    // if (argc < 5){
-    //     printf("Usage:./testcapi [inputWav] [RNNnoise_output] \n");
-    //     return -1;
-    // }
     argv[1] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
-    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
+    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
+    argv[3] = "/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
+
+    // argv[1] = "./mic.wav";
+    // argv[2] = "./ref.wav";
+    // argv[3] = "./out.wav";
     char *in_file = argv[1];
     char *ref_file = argv[2];
 
     printf("Start doing noise supreesion\n");
 
-    argv[3] = "/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
+
     char *out_file = argv[3];
 
 
@@ -130,19 +131,20 @@ int main(int argc, char *argv[]){
 
 
     vector<float> outputdata;
-    size_t frames = micsampleCount / 512;
+    size_t frames = micsampleCount / 160;
 
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser();
-
-    short out[512*5] = {0};
+    // SL_AudioOpenKWS()
+    short out[5120] = {0};
     int code;
     for (int i = 0; i < frames; ++i) {
 
-        code = SL_AudioProcessFor16Khz(filter,&micinput[i*512],&refinput[i*512],out);
-        if (code == 1){
+        code = SL_AudioProcessFor16Khz(filter,&micinput[i*160],&refinput[i*160],out);
+        printf("i=%d\n",i);
+        if (code == -1){
             for (short j : out) {
-//                printf("%d\n,",j);
+                // printf("%d\n,",j);
                 outputdata.push_back(float(j)/32768.0);
             }
         }
@@ -151,7 +153,7 @@ int main(int argc, char *argv[]){
 
     printf("Finished RNNnoise Noise Supression \n");
 
-    ExportWAV(out_file,outputdata,16000);
+    ExportWAV(out_file,outputdata,8000);
     SL_ReleaseAudioProcesser(filter);
     return 0;
 
