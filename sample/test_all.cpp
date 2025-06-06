@@ -95,13 +95,13 @@ void ExportWAV(
 }
 
 int main(int argc, char *argv[]){
-    argv[1] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
-    argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
-    argv[3] = "/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
+    // argv[1] = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
+    // argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
+    // argv[3] = "/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
 
-    // argv[1] = "./mic.wav";
-    // argv[2] = "./ref.wav";
-    // argv[3] = "./out.wav";
+    argv[1] = "./mic.wav";
+    argv[2] = "./ref.wav";
+    argv[3] = "./out.wav";
     char *in_file = argv[1];
     char *ref_file = argv[2];
 
@@ -131,7 +131,7 @@ int main(int argc, char *argv[]){
 
 
     vector<float> outputdata;
-    size_t frames = micsampleCount / 160;
+    size_t frames = micsampleCount / 5120;
 
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser();
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]){
     int code;
     for (int i = 0; i < frames; ++i) {
 
-        code = SL_AudioProcessFor16Khz(filter,&micinput[i*160],&refinput[i*160],out);
+        code = SL_AudioProcessFor16Khz(filter,&micinput[i*5120],&refinput[i*5120],out);
         printf("i=%d\n",i);
         if (code == -1){
             for (short j : out) {
