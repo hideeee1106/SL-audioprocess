@@ -31,15 +31,15 @@ void ExportWAV(
 }
 
 int main(int argc, char *argv[]){
-    // char *model_path = "/home/s4552/CLionProjects/SL-audioprocess/model/rv1106/nkfsim.mnn";
-    // char *in_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
-    // char *lpb_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
-    // char *out_audio_wav ="/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
+    char *model_path = "/home/s4552/CLionProjects/SL-audioprocess/model/rv1106/nkfsim.mnn";
+    char *in_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
+    char *lpb_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
+    char *out_audio_wav ="/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
 
-    char *model_path = "/data/nkfsim.mnn";
-    char *in_audio = "/data/mic.wav";
-    char *lpb_audio = "/data/ref.wav";
-    char *out_audio_wav ="/data/out.wav";
+    // char *model_path = "/data/nkfsim.mnn";
+    // char *in_audio = "/data/mic.wav";
+    // char *lpb_audio = "/data/ref.wav";
+    // char *out_audio_wav ="/data/out.wav";
 
     // char *model_path = "/tmp/lib/nkfsim.mnn";
     // char *in_audio = "/mnt/UDISK/mic.wav";
