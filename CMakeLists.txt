@@ -40,20 +40,21 @@ if(NOT BUILD_IN_R328 AND NOT BUILD_IN_RV1106)
     set(FFTW3_LIBRARIES /media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/linux/lib/libfftw3f.a)
 
 elseif (BUILD_IN_RV1106)
-    set(MNN_DIR /home/hideeee/3rparty/MNN/build_armv7_rv1106/include)
-    set(MNN_LIB_DIR /home/hideeee/3rparty/MNN/build_armv7_rv1106/lib)
+    set(MNN_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/include)
+    set(MNN_LIB_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/build-rv1106/lib)
 
-    include_directories(/home/hideeee/3rparty/fftw3/armv7_830_f/include)
-    set(FFTW3_LIBRARIES /home/hideeee/3rparty/fftw3/armv7_830_f/lib/libfftw3f.a)
+    include_directories(/media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/fftw-rv1106/include)
+    set(FFTW3_LIBRARIES /media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/fftw-rv1106/lib/libfftw3f.a)
 
 
 else ()
     #    fftw
-    include_directories(/home/hideeee/3rparty/fftw3/armv7_r328/install/include)
-    set(FFTW3_LIBRARIES /home/hideeee/3rparty/fftw3/armv7_r328/install/lib/libfftw3f.a)
+    include_directories(/media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/armv7_r328/include)
+    set(FFTW3_LIBRARIES /media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/armv7_r328/lib/libfftw3f.a)
 
-    set(MNN_DIR /home/hideeee/3rparty/MNN/r328/include)
-    set(MNN_LIB_DIR /home/hideeee/3rparty/MNN/r328/lib)
+    set(MNN_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/include)
+    set(MNN_LIB_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/build-r328/lib)
+
 
 endif ()
 
