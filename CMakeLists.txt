@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD 11)
 #include_directories(
 #        /home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/lib/gcc/arm-openwrt-linux-muslgnueabi/6.4.1/include
 #)
+set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 message(STATUS "BUILD_IN_R328: ${BUILD_IN_R328}")
 message(STATUS "BUILD_IN_RV1106: ${BUILD_IN_RV1106}")

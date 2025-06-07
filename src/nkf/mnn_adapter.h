@@ -78,14 +78,8 @@ public:
         memcpy(in_hri->host<float>(), inputs[2].data(), inputs[2].size() * sizeof(float));
         memcpy(in_hii->host<float>(), inputs[3].data(), inputs[3].size() * sizeof(float));
 
-        // 运行 AEC 计算
-        auto start=std::chrono::high_resolution_clock::now();
-
         detect_model_->runSession(sess);
-        auto end=std::chrono::high_resolution_clock::now();
-        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
-        int time=static_cast<int>(milliseconds.count());
-        std::cout<<"推理耗时 "<<time<<" :ms"<<std::endl;
+
     }
 
     MNN::Tensor *  getOutput(const std::string& outputname){

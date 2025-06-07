@@ -6,6 +6,9 @@
 #include "../src/c_api/c_api.h"
 #include "../src/c_api/c_api_define.h"
 #include <iostream>
+#include <sys/syslog.h>
+#include <chrono>
+
 
 void ExportWAV(
         const std::string & Filename,
@@ -34,11 +37,10 @@ int main(int argc, char *argv[]){
     // char *out_audio_wav ="/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
 
 
-
     char *model_path = "/tmp/lib/nkfsim.mnn";
-    char *in_audio = "/root/mic.wav";
-    char *lpb_audio = "/root/ref.wav";
-    char *out_audio_wav ="/root/out.wav";
+    char *in_audio = "/mnt/UDISK/mic.wav";
+    char *lpb_audio = "/mnt/UDISK/ref.wav";
+    char *out_audio_wav ="/mnt/UDISK/out.wav";
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
 
@@ -71,7 +73,16 @@ int main(int argc, char *argv[]){
         printf("i=%d\n",i);
         short outputs[5120] = {0};
 
+     // 运行 AEC 计算
+        auto start=std::chrono::high_resolution_clock::now();
+
         SL_EchoCancelFilterForWav1C16khz(filter,&in[i*shiftlens],&lpb[i*shiftlens],outputs);
+
+        auto end=std::chrono::high_resolution_clock::now();
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+        int time=static_cast<int>(milliseconds.count());
+        std::cout<<"耗时 "<<time<<" :ms"<<std::endl;
+
 
         for(int j = 0;j<shiftlens;++j){
 //            printf("%d\n",outputs[j]);

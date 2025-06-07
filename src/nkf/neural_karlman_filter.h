@@ -125,7 +125,7 @@ public:
         fftwf_execute(mic_plan);
         fftwf_execute(lpb_plan);
 
-        printf("micres:%f\n",mic_res[0][0]);
+        //printf("micres:%f\n",mic_res[0][0]);
 //        pocketfft::r2c(shape, stridel, strideo, axes, pocketfft::FORWARD, mic_in, mic_res.data(), 1.0);
 //        pocketfft::r2c(shape, stridel, strideo, axes, pocketfft::FORWARD, lpb_in,lpb_res.data(), 1.0);
 
