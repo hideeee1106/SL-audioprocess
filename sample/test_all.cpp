@@ -106,6 +106,7 @@ int main(int argc, char *argv[]){
     argv[1] = "/data/mic.wav";
     argv[2] = "/data/ref.wav";
     argv[3] = "/data/out.wav";
+
     char *in_file = argv[1];
     char *ref_file = argv[2];
 
