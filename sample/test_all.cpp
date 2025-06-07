@@ -99,9 +99,13 @@ int main(int argc, char *argv[]){
     // argv[2] = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
     // argv[3] = "/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
 
-    argv[1] = "./mic.wav";
-    argv[2] = "./ref.wav";
-    argv[3] = "./out.wav";
+    // argv[1] = "/mnt/UDISK/mic.wav";
+    // argv[2] = "/mnt/UDISK/ref.wav";
+    // argv[3] = "/mnt/UDISK/out.wav";
+
+    argv[1] = "/data/mic.wav";
+    argv[2] = "/data/ref.wav";
+    argv[3] = "/data/out.wav";
     char *in_file = argv[1];
     char *ref_file = argv[2];
 

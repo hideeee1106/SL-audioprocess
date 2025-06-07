@@ -176,9 +176,9 @@ public:
     }
 
      int Run_ALL(short *mic, short *ref) {
-        // using namespace std::chrono;
-        // auto start = high_resolution_clock::now();
-        //
+        using namespace std::chrono;
+        auto start = high_resolution_clock::now();
+
 
 //      输入 5120  SHORT 音频
         for (int i=0;i<32;i++) {
@@ -195,9 +195,9 @@ public:
 
         }
         //
-        // auto end = high_resolution_clock::now();
-        // auto duration = duration_cast<milliseconds>(end - start);
-        // std::cout << "耗时: " << duration.count() << " ms" << std::endl;
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(end - start);
+        std::cout << "耗时: " << duration.count() << " ms" << std::endl;
 
 
 
