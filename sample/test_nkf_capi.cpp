@@ -36,11 +36,15 @@ int main(int argc, char *argv[]){
     // char *lpb_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
     // char *out_audio_wav ="/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
 
+    char *model_path = "/data/nkfsim.mnn";
+    char *in_audio = "/data/mic.wav";
+    char *lpb_audio = "/data/ref.wav";
+    char *out_audio_wav ="/data/out.wav";
 
-    char *model_path = "/tmp/lib/nkfsim.mnn";
-    char *in_audio = "/mnt/UDISK/mic.wav";
-    char *lpb_audio = "/mnt/UDISK/ref.wav";
-    char *out_audio_wav ="/mnt/UDISK/out.wav";
+    // char *model_path = "/tmp/lib/nkfsim.mnn";
+    // char *in_audio = "/mnt/UDISK/mic.wav";
+    // char *lpb_audio = "/mnt/UDISK/ref.wav";
+    // char *out_audio_wav ="/mnt/UDISK/out.wav";
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
 
