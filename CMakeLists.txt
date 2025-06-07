@@ -93,8 +93,8 @@ target_link_libraries(${LIB_NAME} ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm)
 message("build KARLMAN AEC with MNN on R328 ")
 
 ##build target
-#add_executable(TestCAPINKFSample sample/test_nkf_capi.cpp ${COMPILE_FILES})
-#target_link_libraries(TestCAPINKFSample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm)
+add_executable(TestCAPINKFSample sample/test_nkf_capi.cpp ${COMPILE_FILES})
+target_link_libraries(TestCAPINKFSample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES})
 ##
 ##
 add_executable(TestCAPINSSample sample/test_ns_capi.cpp ${COMPILE_FILES})

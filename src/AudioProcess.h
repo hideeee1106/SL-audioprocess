@@ -53,10 +53,15 @@ public:
 
     }
 
-    short *RunAEC(short *mic, short *ref) {
-        nkfProcessor->enhance(mic, ref);
-        auto out = nkfProcessor->getoutput();
-        return out;
+    void *RunAEC(short *mic, short *ref,short* out) {
+
+        for (int i = 0; i < 10; ++i) {
+            nkfProcessor->enhance(mic+512*i, ref+512*i);
+            for (int j = 0; j < 512; ++j) {
+                out[i*512+j] = nkfProcessor->outputbuffer[i];
+            }
+            nkfProcessor->reset();
+        }
     }
 
     void ResetAEC() {
@@ -224,9 +229,8 @@ public:
 
                int code = kwspoint->run(kwswavdata);
                return code;
-            } else{
-                return -1;
             }
+            return -1;
         } else{
             return -2;
         }

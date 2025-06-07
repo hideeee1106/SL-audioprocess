@@ -21,15 +21,7 @@ void SL_ReleaseAudioProcesser(SL_AudioProcesser *predictor){
 };
 
 void SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor,short *mic,short *ref,short * res){
-    auto out = predictor->impl.RunAEC(mic,ref);
-
-
-    for (int i = 0; i < predictor->impl.AEC_BLOCK_SHIFT; ++i) {
-
-        res[i] = out[i];
-//        printf("outdata:%f,",res[i]);
-    }
-    predictor->impl.ResetAEC();
+    predictor->impl.RunAEC(mic,ref,res);
 };
 
 void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,short *out){

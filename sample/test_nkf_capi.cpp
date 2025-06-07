@@ -28,14 +28,17 @@ void ExportWAV(
 }
 
 int main(int argc, char *argv[]){
-    if (argc < 5)
-    {
-        printf("Usage:%s model_path mic_input_path ref_path\n", argv[0]);
-    }
-    char *model_path = "/oem/usr/lib/nkfsim.mnn";
-    char *in_audio = "/data/mic.wav";
-    char *lpb_audio = "/data/ref.wav";
-    char *out_audio_wav ="/data/out.wav";
+    char *model_path = "/home/s4552/CLionProjects/SL-audioprocess/model/rv1106/nkfsim.mnn";
+    char *in_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/mic.wav";
+    char *lpb_audio = "/home/s4552/CLionProjects/SL-audioprocess/resource/ref.wav";
+    char *out_audio_wav ="/home/s4552/CLionProjects/SL-audioprocess/resource/out.wav";
+
+
+
+    // char *model_path = "/oem/usr/lib/nkfsim.mnn";
+    // char *in_audio = "/data/mic.wav";
+    // char *lpb_audio = "/data/ref.wav";
+    // char *out_audio_wav ="/data/out.wav";
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
 
@@ -49,7 +52,7 @@ int main(int argc, char *argv[]){
     int audiolen=inputfile.getNumSamplesPerChannel();
     int audiolen2=inputlpbfile.getNumSamplesPerChannel();
     audiolen =audiolen2<audiolen ? audiolen2:audiolen;
-    int shiftlens = 512;
+    int shiftlens = 5120;
     int process_num=audiolen/shiftlens;
 
 
@@ -66,7 +69,7 @@ int main(int argc, char *argv[]){
     printf("%d\n",audiolen);
     for (int i = 0; i < process_num; ++i) {
         printf("i=%d\n",i);
-        short outputs[512] = {0};
+        short outputs[5120] = {0};
 
         SL_EchoCancelFilterForWav1C16khz(filter,&in[i*shiftlens],&lpb[i*shiftlens],outputs);
 

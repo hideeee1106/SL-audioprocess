@@ -32,6 +32,7 @@
 #include <iterator>
 #include <algorithm>
 #include <cstring>
+#include <limits>
 
 // disable some warnings on Windows
 #if defined (_MSC_VER)
