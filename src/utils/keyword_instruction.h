@@ -9,7 +9,7 @@
 
 namespace KEY_WORDS{
 
-    const std::wstring index1=L"问";
+    // const std::wstring index1=L"问";
 
 //    lin (lin): 437
 //ling (ling): 439
@@ -49,9 +49,13 @@ namespace KEY_WORDS{
     const std::wstring index12=L"领";
 
     const std::wstring index13=L"零";
+    const std::wstring index14=L"练";
+    const std::wstring index15=L"联";
+    const std::wstring index16=L"脸";
+    const std::wstring index17=L"连";
 
-    const std::vector<std::wstring>keywords={index1,index2,index3,index4,index5,
-                                             index6,index7,index8,index9,index10,index11,index12,index13
+    const std::vector<std::wstring>keywords={index2,index3,index4,index5,
+                                             index6,index7,index8,index9,index10,index11,index12,index13,index14,index15,index16,index17
 
     };
 }
