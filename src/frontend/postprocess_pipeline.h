@@ -9,16 +9,21 @@
 #include <unordered_map>
 #include <queue>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <sstream>
 #include "unordered_set"
 #include "functional"
 #include "fstream"
+#include "kws/CommandRecognizer.h"
 
 
 class PostDecoder {
 public:
+    PostDecoder();
+
     void decode(const std::vector<std::vector<float>>& probs);
 
     int read_token(const std::string& token_file);
@@ -36,6 +41,7 @@ private:
     std::unordered_map<std::string, int> tokens_table;
     float thersh_score=0.25;
 
+    shared_ptr<CommandRecognizer> commandsrecognizer;
 
 private:
     bool isSubArray(const std::vector<int>& A, const std::vector<int>& B) {
@@ -59,6 +65,7 @@ private:
         }
         return false;
     }
+
 
 };
 

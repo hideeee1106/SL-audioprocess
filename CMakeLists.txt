@@ -83,7 +83,9 @@ set(COMPILE_FILES  ${C_API_FILES} ${NS_SRC_FILES} ${KWS_FILES} ${AGC_FILES})
 
 # Build shared library
 set(LIB_NAME AudioProcess-lite)
-add_library(${LIB_NAME} SHARED ${COMPILE_FILES})
+add_library(${LIB_NAME} SHARED ${COMPILE_FILES}
+        src/kws/CommandRecognizer.cpp
+        src/kws/CommandRecognizer.h)
 target_link_libraries(${LIB_NAME} ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm )
 message("build KARLMAN AEC with MNN on R328 ")
 

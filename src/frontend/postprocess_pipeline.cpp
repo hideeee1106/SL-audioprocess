@@ -7,6 +7,11 @@
 #include <codecvt>
 #include "../utils/keyword_instruction.h"
 
+PostDecoder::PostDecoder() {
+    commandsrecognizer = std::make_shared<CommandRecognizer>();
+}
+
+
 void PostDecoder::decode(const std::vector<std::vector<float>> &probs) {
     for (const auto& frame_probs : probs) {
         // 在每个时间步上选择概率最高的标签
@@ -15,6 +20,7 @@ void PostDecoder::decode(const std::vector<std::vector<float>> &probs) {
         if (max_idx != 0 && (decoded_seq.empty() || max_idx != decoded_seq.back())&&frame_probs[max_idx]>thersh_score) //
         {
             decoded_seq.push_back(max_idx);
+
             // std::cout<<"token_idx:"<<max_idx<<" score:"<<frame_probs[max_idx]<<std::endl;
         }
     }
@@ -83,6 +89,7 @@ int PostDecoder::match_and_output(){
             if (pair.second == index)
             {
                 std::cout << pair.first << " ";
+                commandsrecognizer->onNewWord(pair.first);
                 break;
             }
         }
@@ -107,6 +114,7 @@ int PostDecoder::match_and_output(){
         }
     }
     return 0;
+
 //    if (isSubArray(default_keywords_seq[0],decoded_seq))
 //
 //        return 1;
@@ -162,7 +170,4 @@ void PostDecoder::Reset() {
     decoded_seq.clear();
 
 }
-
-
-
 
