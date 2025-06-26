@@ -122,11 +122,15 @@ int main(int argc, char *argv[]){
     for (int i = 0; i < frames; ++i) {
         short out[160] = {0};
         SL_EchoNoiseCancelForWav1C16khz(filter,&input[i*160],out);
-
+        for (int x = 0; x < 160; ++x) {
+            printf("%d,", input[x]);
+        }
+        printf("\n");
         for (short j : out) {
-            printf("%d\n",j);
+            printf("%d,",j);
             outputdata.push_back(float(j)/32768.0);
         }
+        break;
     }
 
     printf("Finished RNNnoise Noise Supression \n");
