@@ -82,6 +82,8 @@ int PostDecoder::match_and_output(){
 
     //输出检测结果
     std::cout << "output_results:" << std::endl;
+
+    int code;
     for (int index : decoded_seq)
     {
         for (const auto& pair : tokens_table)
@@ -89,31 +91,43 @@ int PostDecoder::match_and_output(){
             if (pair.second == index)
             {
                 std::cout << pair.first << " ";
-                commandsrecognizer->onNewWord(pair.first);
+                code = commandsrecognizer->onNewWord(pair.first);
+                // if ((index == 2524 or index == 1925 or index == 1800) and (lastzifu == 932 or lastzifu == 1206  or lastzifu == 1462 or lastzifu == 1463 or lastzifu == 2488  or  lastzifu == 1712 or lastzifu == 2293 or  lastzifu == 931 or lastzifu == 1060)) {
+                //     lastzifu = pair.second;
+                //     return 1;
+                // }
+                if (code ==1) {
+                    return 1;
+                }
+                lastzifu = pair.second;
+                // printf("lastzifu:%d\n", lastzifu);
                 break;
             }
         }
     }
-
-
-    for (const auto & i : default_keywords_seq) {
-        int code = isSubArray(i,decoded_seq);
-        if (code ==1 ){
-
-            if (decoded_seq.size() == 1) {
-                if (decoded_seq[0] == 2494) {
-                    return 2;
-                }
-            }else if (decoded_seq.size() == 2){
-                if (decoded_seq[1] == 2494) {
-                    return 2;
-                }
-            }
-            printf("识别到唤醒词\n");
-            return 1;
-        }
-    }
     return 0;
+
+
+
+    //
+    // for (const auto & i : default_keywords_seq) {
+    //     int code = isSubArray(i,decoded_seq);
+    //     if (code ==1 ){
+    //
+    //         if (decoded_seq.size() == 1) {
+    //             if (decoded_seq[0] == 2494) {
+    //                 return 2;
+    //             }
+    //         }else if (decoded_seq.size() == 2){
+    //             if (decoded_seq[1] == 2494) {
+    //                 return 2;
+    //             }
+    //         }
+    //         printf("识别到唤醒词\n");
+    //         return 1;
+    //     }
+    // }
+    // return 0;
 
 //    if (isSubArray(default_keywords_seq[0],decoded_seq))
 //

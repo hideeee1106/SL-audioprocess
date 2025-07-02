@@ -5,37 +5,61 @@
 #include "CommandRecognizer.h"
 
 
-void CommandRecognizer::onNewWord(const string &word) {
-        // 1. 更新滑动窗口
-        wordWindow.push_back(word);
-        if (wordWindow.size() > maxWindowSize) {
-            wordWindow.pop_front();
-        }
+// 需要头文件
+#include <chrono>
+using namespace std::chrono;
 
-        // 2. 匹配指令
-        string joined;
-        for (const auto& word : wordWindow) {
-            joined += word;
-        }
+int CommandRecognizer::onNewWord(const std::string &word) {
+    auto now = steady_clock::now();
 
-        string matched = fuzzyMatch(joined,commandList,0.5);
-        if (!matched.empty()) {
-            auto now = steady_clock::now();
-            if (duration_cast<milliseconds>(now - lastTriggerTime).count() >= cooldownMs) {
-                lastTriggerTime = now;
-                cout << "[Command Triggered] " << matched << endl;
-                // TODO: 执行对应的动作
-            }
-        }
+    // 1. 检查是否超过 2 秒没人说话
+    if (duration_cast<milliseconds>(now - lastWordTime).count() > 2000) {
+        wordWindow.clear();
+        // std::cout << "[Info] 超过2秒没人说话，清空窗口" << std::endl;
+    }
 
+    // 2. 记录本次说话时间
+    lastWordTime = now;
+
+    // 3. 更新滑动窗口
+    wordWindow.push_back(word);
+    if (wordWindow.size() > maxWindowSize) {
+        wordWindow.pop_front();
+    }
+
+    // 4. 拼接窗口内容
+    std::string joined;
+    for (const auto &w : wordWindow) {
+        joined += w;
+    }
+
+    std::cout << "[Window] 拼接后: " << joined << std::endl;
+
+    // 5. 模糊匹配
+    std::string matched = fuzzyMatch(joined, commandList, 0.6);
+    if (!matched.empty()) {
+        if (duration_cast<milliseconds>(now - lastTriggerTime).count() >= cooldownMs) {
+            lastTriggerTime = now;
+            std::cout << "[Command Triggered] " << "你好 小霖！！" << std::endl;
+            wordWindow.clear();
+            return 1;
+            // TODO: 执行动作
+        }return 0;
+    }return 0;
 }
-
 
 std::map<std::string, std::string> CommandRecognizer::createPinyinMap() {
     return {
         // “你好”
         {"你", "ni"}, {"尼", "ni"}, {"泥", "ni"}, {"倪", "ni"},
         {"好", "hao"}, {"号", "hao"}, {"浩", "hao"}, {"郝", "hao"},
+
+        // “你好小霖”
+        {"小", "xiao"}, {"晓", "xiao"}, {"笑", "xiao"}, {"肖", "xiao"}, {"效", "xiao"},
+        {"霖", "lin"}, {"林", "lin"}, {"琳", "lin"}, {"零", "ling"}, {"邻", "lin"},
+        {"少","shao"},{"像","xiang"},
+
+
 
         // “早上好”
         {"早", "zao"}, {"枣", "zao"}, {"灶", "zao"},
@@ -128,6 +152,34 @@ std::map<std::string, std::string> CommandRecognizer::createPinyinMap() {
     };
 }
 
+
+
+int countChineseCharacters(const std::string& str) {
+    int count = 0;
+    for (size_t i = 0; i < str.size(); ) {
+        unsigned char c = static_cast<unsigned char>(str[i]);
+        if ((c & 0xF0) == 0xE0) {
+            // 3-byte UTF-8，通常是汉字
+            ++count;
+            i += 3;
+        } else if ((c & 0x80) == 0) {
+            // ASCII
+            i += 1;
+        } else if ((c & 0xE0) == 0xC0) {
+            // 2-byte UTF-8（不常见的符号）
+            i += 2;
+        } else if ((c & 0xF8) == 0xF0) {
+            // 4-byte（比如 Emoji）
+            i += 4;
+        } else {
+            // 非法字符
+            ++i;
+        }
+    }
+    return count;
+}
+
+
 // 中文转拼音函数
 std::string CommandRecognizer::getPinyin(const std::string& chinese) {
     static const auto pinyinMap = createPinyinMap();
@@ -172,11 +224,24 @@ float CommandRecognizer::calculateSimilarity(const std::string& s1, const std::s
     return 1.0f - (float)dp[len1][len2] / std::max(len1, len2);
 }
 
-// 模糊匹配函数
 std::string CommandRecognizer::fuzzyMatch(const std::string& input,
                                           const std::vector<std::string>& commands,
                                           float threshold) {
+
+    // 汉字数量不足两个，跳过
+    if (countChineseCharacters(input) < 2) {
+        return "";
+    }
+
     std::string inputPinyin = getPinyin(input);
+
+    // 必须包含 lin / ling / ming 才能匹配
+    if (inputPinyin.find("lin") == std::string::npos &&
+        inputPinyin.find("ling") == std::string::npos &&
+        inputPinyin.find("ming") == std::string::npos) {
+        return "";
+        }
+
     std::string bestMatch;
     float maxScore = 0.0f;
 
@@ -184,11 +249,12 @@ std::string CommandRecognizer::fuzzyMatch(const std::string& input,
         std::string cmdPinyin = getPinyin(cmd);
         float score = calculateSimilarity(inputPinyin, cmdPinyin);
 
-        if (score > maxScore) {
+        if (score >= maxScore) {
             maxScore = score;
             bestMatch = cmd;
         }
     }
 
+    printf("maxScore: %.3f\n", maxScore);
     return (maxScore >= threshold) ? bestMatch : "";
 }

@@ -42,6 +42,9 @@ private:
     float thersh_score=0.25;
 
     shared_ptr<CommandRecognizer> commandsrecognizer;
+    int lastzifu;
+
+
 
 private:
     bool isSubArray(const std::vector<int>& A, const std::vector<int>& B) {

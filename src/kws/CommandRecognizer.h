@@ -20,13 +20,14 @@ using namespace std::chrono;
 
 class CommandRecognizer {
 public:
-    CommandRecognizer(int max_window_size = 9, int cooldown_ms = 2000)
+    CommandRecognizer(int max_window_size = 5, int cooldown_ms = 2000)
         : maxWindowSize(max_window_size), cooldownMs(cooldown_ms) {
+
         lastTriggerTime = steady_clock::now() - milliseconds(cooldown_ms);
         initCommands();
     }
 
-    void onNewWord(const string& word);
+    int onNewWord(const string& word);
     static map<std::string, std::string> createPinyinMap();
     static std::string getPinyin(const std::string& chinese);
     static float calculateSimilarity(const std::string& s1, const std::string& s2);
@@ -36,19 +37,21 @@ public:
                           float threshold);
 
 private:
+    std::chrono::steady_clock::time_point lastWordTime = std::chrono::steady_clock::now();
     deque<string> wordWindow;
     int maxWindowSize;
     int cooldownMs;
     time_point<steady_clock> lastTriggerTime;
 
     vector<std::string> commandList;
+    vector<std::string> keyword = {   "霖", "林", "琳", "零", "灵"};
 
     void initCommands() {
         commandList = {
-            "你好", "早上好", "晚安", "再见", "你真可爱", "我回来了", "我饿了", "好累",
-            "心情不好", "谢谢你", "我喜欢你", "好无聊", "你好笨", "你真聪明", "对不起",
-            "生日快乐", "做个鬼脸", "夸我", "生气", "今天天气", "你在干什么"
-        };
+            // "你好", "早上好", "晚安", "再见", "你真可爱", "我回来了", "我饿了", "好累",
+            // "心情不好", "谢谢你", "我喜欢你", "好无聊", "你好笨", "你真聪明", "对不起",
+            // "生日快乐", "做个鬼脸", "夸我", "生气", "今天天气", "你在干什么"
+            "你好小零","你好小明"};
     }
 
 };
