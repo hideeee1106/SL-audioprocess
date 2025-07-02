@@ -44,14 +44,11 @@ private:
     time_point<steady_clock> lastTriggerTime;
 
     vector<std::string> commandList;
-    vector<std::string> keyword = {   "霖", "林", "琳", "零", "灵"};
+    vector<std::string> keyword = {"松", "嵩", "宋", "送"};
 
     void initCommands() {
         commandList = {
-            // "你好", "早上好", "晚安", "再见", "你真可爱", "我回来了", "我饿了", "好累",
-            // "心情不好", "谢谢你", "我喜欢你", "好无聊", "你好笨", "你真聪明", "对不起",
-            // "生日快乐", "做个鬼脸", "夸我", "生气", "今天天气", "你在干什么"
-            "你好小零","你好小明"};
+            "打开龙头","关闭龙头","出一杯水","小松小松"};
     }
 
 };

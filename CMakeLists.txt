@@ -4,18 +4,10 @@ project(NKF_MNN_Deploy_R328)
 set(CMAKE_CXX_STANDARD 11)
 #set(CMAKE_BUILD_TYPE Debug)
 
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon -march=armv7-a")
-#set(CMAKE_CXX_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_CXX_FLAGS}")
-#set(CMAKE_C_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_C_FLAGS}" )
-#message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
-#include_directories(
-#        /home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/lib/gcc/arm-openwrt-linux-muslgnueabi/6.4.1/include
-#)
 
-OPTION( BUILD_IN_R328 "Build in r328" OFF)
 OPTION( BUILD_IN_RV1106 "Build in RV1106" OFF)
 
-message(STATUS "BUILD_IN_R328: ${BUILD_IN_R328}")
+
 message(STATUS "BUILD_IN_RV1106: ${BUILD_IN_RV1106}")
 
 
@@ -41,14 +33,6 @@ elseif (BUILD_IN_RV1106)
     include_directories(/media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/fftw-rv1106/include)
     set(FFTW3_LIBRARIES /media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/fftw-rv1106/lib/libfftw3f.a)
 
-
-else ()
-    #    fftw
-    include_directories(/media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/armv7_r328/include)
-    set(FFTW3_LIBRARIES /media/s4552/F3CF5497F0925C7D/3rdparty/fftw3/armv7_r328/lib/libfftw3f.a)
-
-    set(MNN_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/include)
-    set(MNN_LIB_DIR /media/s4552/F3CF5497F0925C7D/3rdparty/MNN/build-r328/lib)
 
 endif ()
 
