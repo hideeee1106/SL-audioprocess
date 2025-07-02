@@ -12,31 +12,19 @@
 #include "ns/denoise.h"
 #include "aecm/echo_control_mobile.h"
 
-#define pocketsphinxkws 0
 #define fsmnkws 1
 
 #if fsmnkws
 #include "KwsPipeline.h"
 #endif
 
-#if pocketsphinxkws
-extern "C" {
-    #include <pocketsphinx.h>
-}
-#endif
 
 class AudioProcess {
 public:
     const int AEC_BLOCK_SHIFT = 512;
     const int Ns_BLOCK_WINDOWS = (40 << 2);
     const int CaffeLens = 5120;
-//    2560/16000 = 160ms
 
-#if pocketsphinxkws
-    const char *hmm_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/model-cn-5.2/zh_cn.cd_cont_5000";
-    const char *lm_path  = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.lm";
-    const char *dict_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.dic";
-#endif
     vector<short> NkfOutAudioCaffe;
     vector<short> NsOutAudioCaffe;
 public:
@@ -49,8 +37,6 @@ public:
         nkfProcessor = std::make_shared<NKFProcessor>();
         nsProcessor = std::make_shared<NosieCancel>();
         nkfProcessor->Aec_Init(model_path);
-
-
     }
 
     void *RunAEC(short *mic, short *ref,short* out) {
@@ -235,72 +221,6 @@ public:
             return -2;
         }
 #endif
-
-#if pocketsphinxkws
-        if( M == 0){
-            if (enable_use_kws_){
-
-                int silencecode = simple_vad_int16_2560(NsOutAudioCaffe.data(),NsOutAudioCaffe.size());
-//                printf("silence:%d\n",silencecode);
-                if(silencecode == 1){
-                    if(not in_speech){
-                        in_speech = true;
-                        ps_start_utt(ps);
-
-                    }
-
-                    ps_process_raw(ps, NsOutAudioCaffe.data(), NsOutAudioCaffe.size(), FALSE, FALSE);
-                    count = count + 1;
-                    if (count > MAX_SPEECH_TIME){
-                        LOGD("MAX_SPEECH_TIME");
-                        ps_end_utt(ps);
-                        const char *hyp = ps_get_hyp(ps, nullptr);
-                        resetkws();
-                        if (hyp != nullptr) {
-                            printf("识别结果：%s\n", hyp);
-                            return 3;
-                        } else {
-                            printf("无识别结果\n");
-                            return 4;
-                        }
-
-
-                    }
-
-                    return 2;
-//                  识别到语音，准备唤醒检测
-                }
-                else{
-                    if(in_speech){
-                        wait_count = wait_count + 1;
-                    }
-
-//                    count
-                    if(in_speech && wait_count == 3){
-                        ps_end_utt(ps);
-                        const char *hyp = ps_get_hyp(ps, nullptr);
-                        resetkws();
-                        if (hyp != nullptr) {
-                            printf("识别成功！！！！！！！！！！！，识别结果：%s\n", hyp);
-                            return 3;
-
-                        } else {
-                            printf("无识别结果\n");
-                            return 4;
-                        }
-
-                    }
-
-                }
-            }
-
-            return 1;
-        } else{
-            return 0;
-        }
-#endif
-
-
     };
 
     short *getOutputs() {
@@ -312,44 +232,7 @@ public:
     }
 
 
-#if pocketsphinxkws
-    void resetkws(){
-            count = 0;
-            in_speech = false;
-            wait_count = 0;
-        }
-
-    void kws(const char* hmm_model,const char* dict_model, const char*lm_model){
-        enable_use_kws_ = true;
-        // 参数配置
-        config = ps_config_init(NULL);
-        ps_default_search_args(config);  // 设置默认参数
-
-        ps_config_set_str(config, "hmm", hmm_model);
-        ps_config_set_str(config, "dict", dict_model);
-        ps_config_set_str(config, "lm", lm_model);
-        ps_config_set_str(config, "loglevel", "INFO");
-
-        if (config == NULL) {
-            std::cerr << "Error initializing config!" << std::endl;
-            return;
-        }
-        // 创建解码器
-        ps = ps_init(config);
-        if (ps == nullptr) {
-            fprintf(stderr, "Failed to create decoder\n");
-        } else {
-            printf("Decoder successfully created.\n");
-        }
-
-
-    }
-    void killkws(){
-        ps_free(ps);
-        ps_config_free(config);
-        enable_use_kws_ = false;
-    }
-#elif fsmnkws
+#if fsmnkws
     void kws(const std::string& model_path, const std::string& token_file){
         kwspoint = std::make_shared<KwsPipeline>(model_path,token_file);
         enable_use_kws_ = true;
@@ -368,9 +251,6 @@ private:
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
 
-
-//    std::shared_ptr<Webrtc>
-
     bool in_speech{false};
     bool enable_use_kws_{false};
     int count = 0;
@@ -378,12 +258,6 @@ private:
 
 #if fsmnkws
     std::shared_ptr<KwsPipeline> kwspoint;
-#endif
-
-#if pocketsphinxkws
-    ps_config_t *config = nullptr;
-    ps_decoder_t *ps = nullptr;
-
 #endif
 
 };
