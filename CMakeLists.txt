@@ -2,15 +2,10 @@ cmake_minimum_required(VERSION 3.21)
 project(NKF_MNN_Deploy_R328)
 
 set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_BUILD_TYPE Debug)
 
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon -march=armv7-a")
-#set(CMAKE_CXX_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_CXX_FLAGS}")
-#set(CMAKE_C_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 ${CMAKE_C_FLAGS}" )
-#message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
-#include_directories(
-#        /home/hideeee/3rparty/toolchain-sunxi-musl/toolchain/lib/gcc/arm-openwrt-linux-muslgnueabi/6.4.1/include
-#)
+
+set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 OPTION( BUILD_IN_R328 "Build in r328" OFF)
 OPTION( BUILD_IN_RV1106 "Build in RV1106" OFF)
@@ -87,15 +82,14 @@ add_library(${LIB_NAME} SHARED ${COMPILE_FILES}
         src/kws/CommandRecognizer.cpp
         src/kws/CommandRecognizer.h)
 target_link_libraries(${LIB_NAME} ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm )
-message("build KARLMAN AEC with MNN on R328 ")
 
 ##build target
 #add_executable(TestCAPINKFSample sample/test_nkf_capi.cpp ${COMPILE_FILES})
 #target_link_libraries(TestCAPINKFSample ${MNN_LIBRARIES} ${FFTW3_LIBRARIES} aecm )
 ##
 ##
-add_executable(TestCAPINSSample sample/test_ns_capi.cpp ${COMPILE_FILES})
-target_link_libraries(TestCAPINSSample ${MNN_LIBRARIES} aecm)
+#add_executable(TestCAPINSSample sample/test_ns_capi.cpp ${COMPILE_FILES})
+#target_link_libraries(TestCAPINSSample ${MNN_LIBRARIES} aecm)
 #
 #add_executable(TestCAPISample sample/test_capi_sample.cpp ${COMPILE_FILES})
 #target_link_libraries(TestCAPISample ${MNN_LIBRARIES})

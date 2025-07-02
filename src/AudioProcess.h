@@ -22,11 +22,6 @@
 #include "KwsPipeline.h"
 #endif
 
-#if pocketsphinxkws
-extern "C" {
-    #include <pocketsphinx.h>
-}
-#endif
 
 static void remove_front_n(std::vector<short> &vec, size_t n) {
     if (n == 0 || vec.empty()) return;
@@ -67,18 +62,15 @@ static int simple_vad_int16_5120(const short *input, int len) {
 
 class AudioProcess {
 public:
-    const int AEC_BLOCK_SHIFT = 160;
+    const int AEC_BLOCK_SHIFT = 512;
     const int Ns_BLOCK_WINDOWS = (40 << 2);
     const int CaffeLens = 5120;
     const int Samplerate = 16000;
 //    2560/16000 = 160ms
-
-#if pocketsphinxkws
-    const char *hmm_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/model-cn-5.2/zh_cn.cd_cont_5000";
-    const char *lm_path  = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.lm";
-    const char *dict_path = "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/xiaosong_kws_data/9445.dic";
-#endif
+    vector<short>NkfOutAudioCaffe;
     vector<short> NsOutAudioCaffe;
+
+
 public:
     AudioProcess() {}
 
@@ -89,6 +81,9 @@ public:
 
     void Init() {
         nsProcessor = std::make_shared<NosieCancel>();
+        nkfProcessor = std::make_shared<NKFProcessor>();
+
+
 //       webrtc aec
         config.cngMode = AecmTrue;
         config.echoMode = 3;// 0, 1, 2, 3 (default), 4
@@ -128,13 +123,13 @@ public:
     }
 
     int RunAEC(short *mic, short *ref,short *out_buffer) {
-        if (WebRtcAecm_BufferFarend(aecmInst, ref, AEC_BLOCK_SHIFT) != 0) {
+        if (WebRtcAecm_BufferFarend(aecmInst, ref, 160) != 0) {
             LOGD("WebRtcAecm_BufferFarend() failed.\n");
             WebRtcAecm_Free(aecmInst);
             return -1;
         }
 
-        int nRet = WebRtcAecm_Process(aecmInst, mic, NULL, out_buffer, AEC_BLOCK_SHIFT, msInSndCardBuf);
+        int nRet = WebRtcAecm_Process(aecmInst, mic, NULL, out_buffer, 160, msInSndCardBuf);
 
         if (nRet != 0) {
             LOGD("failed in WebRtcAecm_Process\n");
@@ -144,6 +139,19 @@ public:
         return 1;
 
     }
+
+
+    int RunNKFAEC(short *mic, short *ref,short* out) {
+
+        for (int i = 0; i < 10; ++i) {
+            nkfProcessor->enhance(mic+512*i, ref+512*i);
+            for (int j = 0; j < 512; ++j) {
+                out[i*512+j] = nkfProcessor->outputbuffer[i];
+            }
+            nkfProcessor->reset();
+        }
+    }
+
 
     void releaseAEC() {
 
@@ -179,26 +187,73 @@ public:
         using namespace std::chrono;
         auto start = high_resolution_clock::now();
 
+        int code = 0;
+        for (size_t i = 0; i < 5120; ++i) {
+            if (ref[i] != 0) {
+                code = 1;
+            }
+        }
 
-//      输入 5120  SHORT 音频
-        for (int i=0;i<32;i++) {
-            short nkfout[160];
-            RunAEC(mic+i*160,ref+i*160, nkfout);
 
-            short nsout[160];
-            float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
-            RunAGC(nsout);
 
-            for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                NsOutAudioCaffe.push_back(nsout[j]);
+        if (code == 0 ){
+
+            for (int i = 0; i < 10; ++i) {
+                nkfProcessor->enhance(mic+i*512, ref+i*512);
+                auto nkfout = nkfProcessor->getoutput();
+                for (int j = 0; j < AEC_BLOCK_SHIFT; ++j) {
+                    NkfOutAudioCaffe.push_back(nkfout[j]);
+                }
+                nkfProcessor->reset();
+                size_t N = NkfOutAudioCaffe.size() / Ns_BLOCK_WINDOWS;
+                size_t M = NkfOutAudioCaffe.size() % Ns_BLOCK_WINDOWS;
+
+                for (int i = 0; i < N; ++i) {
+                    short NSINPUT[160] = {0};
+                    short NSOUTPUT[160] = {0};
+                    for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                        NSINPUT[j] = NkfOutAudioCaffe[j + i * Ns_BLOCK_WINDOWS];
+                    }
+                    float prob = nsProcessor->rnnoise_process_frame(NSOUTPUT, NSINPUT);
+                    RunAGC(NSOUTPUT);
+                    for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                        NsOutAudioCaffe.push_back(NSOUTPUT[j]);
+                    }
+                }
+                remove_front_n(NkfOutAudioCaffe, N * Ns_BLOCK_WINDOWS);
+
             }
 
         }
+
+
+
+
+
+
+
+
+//      输入 5120  SHORT 音频
+        else if (code == 1) {
+            for (int i=0;i<32;i++) {
+                short nkfout[160];
+                RunAEC(mic+i*160,ref+i*160, nkfout);
+
+                short nsout[160];
+                float prob = nsProcessor->rnnoise_process_frame(nsout, nkfout);
+                RunAGC(nsout);
+
+                for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+                    NsOutAudioCaffe.push_back(nsout[j]);
+                }
+
+            }
+        }
+
         //
         auto end = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(end - start);
-        // std::cout << "耗时: " << duration.count() << " ms" << std::endl;
-
+        std::cout << "耗时: " << duration.count() << " ms" <<"code ="<<code<< std::endl;
 
 
 
@@ -214,70 +269,6 @@ public:
             }
             return -1;
         }return -2;
-#endif
-
-#if pocketsphinxkws
-        if( M == 0){
-            if (enable_use_kws_){
-
-                int silencecode = simple_vad_int16_2560(NsOutAudioCaffe.data(),NsOutAudioCaffe.size());
-//                printf("silence:%d\n",silencecode);
-                if(silencecode == 1){
-                    if(not in_speech){
-                        in_speech = true;
-                        ps_start_utt(ps);
-
-                    }
-
-                    ps_process_raw(ps, NsOutAudioCaffe.data(), NsOutAudioCaffe.size(), FALSE, FALSE);
-                    count = count + 1;
-                    if (count > MAX_SPEECH_TIME){
-                        LOGD("MAX_SPEECH_TIME");
-                        ps_end_utt(ps);
-                        const char *hyp = ps_get_hyp(ps, nullptr);
-                        resetkws();
-                        if (hyp != nullptr) {
-                            printf("识别结果：%s\n", hyp);
-                            return 3;
-                        } else {
-                            printf("无识别结果\n");
-                            return 4;
-                        }
-
-
-                    }
-
-                    return 2;
-//                  识别到语音，准备唤醒检测
-                }
-                else{
-                    if(in_speech){
-                        wait_count = wait_count + 1;
-                    }
-
-//                    count
-                    if(in_speech && wait_count == 3){
-                        ps_end_utt(ps);
-                        const char *hyp = ps_get_hyp(ps, nullptr);
-                        resetkws();
-                        if (hyp != nullptr) {
-                            printf("识别成功！！！！！！！！！！！，识别结果：%s\n", hyp);
-                            return 3;
-
-                        } else {
-                            printf("无识别结果\n");
-                            return 4;
-                        }
-
-                    }
-
-                }
-            }
-
-            return 1;
-        } else{
-            return 0;
-        }
 #endif
     }
 
@@ -375,44 +366,7 @@ public:
     }
 
 
-#if pocketsphinxkws
-    void resetkws(){
-            count = 0;
-            in_speech = false;
-            wait_count = 0;
-        }
-
-    void kws(const char* hmm_model,const char* dict_model, const char*lm_model){
-        enable_use_kws_ = true;
-        // 参数配置
-        config = ps_config_init(NULL);
-        ps_default_search_args(config);  // 设置默认参数
-
-        ps_config_set_str(config, "hmm", hmm_model);
-        ps_config_set_str(config, "dict", dict_model);
-        ps_config_set_str(config, "lm", lm_model);
-        ps_config_set_str(config, "loglevel", "INFO");
-
-        if (config == NULL) {
-            std::cerr << "Error initializing config!" << std::endl;
-            return;
-        }
-        // 创建解码器
-        ps = ps_init(config);
-        if (ps == nullptr) {
-            fprintf(stderr, "Failed to create decoder\n");
-        } else {
-            printf("Decoder successfully created.\n");
-        }
-
-
-    }
-    void killkws(){
-        ps_free(ps);
-        ps_config_free(config);
-        enable_use_kws_ = false;
-    }
-#elif fsmnkws
+#if fsmnkws
     void kws(const std::string& model_path, const std::string& token_file){
         kwspoint = std::make_shared<KwsPipeline>(model_path,token_file);
         enable_use_kws_ = true;
@@ -426,16 +380,18 @@ public:
 #endif
 
 private:
-    // 回声消除实例
+    // webrtc aec
     AecmConfig config;
     int16_t msInSndCardBuf = 30;
     void *aecmInst;
 
-// agc
+    // agc
     WebRtcAgcConfig agcConfig;
     void *agcInst;
     // ns
     std::shared_ptr<NosieCancel> nsProcessor;
+
+    std::shared_ptr<NKFProcessor> nkfProcessor;
 
     bool in_speech{false};
     bool enable_use_kws_{false};
@@ -444,12 +400,6 @@ private:
 
 #if fsmnkws
     std::shared_ptr<KwsPipeline> kwspoint;
-#endif
-
-#if pocketsphinxkws
-    ps_config_t *config = nullptr;
-    ps_decoder_t *ps = nullptr;
-
 #endif
 
 };
