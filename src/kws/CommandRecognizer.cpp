@@ -36,7 +36,7 @@ int CommandRecognizer::onNewWord(const std::string &word) {
     std::cout << "[Window] 拼接后: " << joined << std::endl;
 
     // 5. 模糊匹配
-    std::string matched = fuzzyMatch(joined, commandList, 0.6);
+    std::string matched = fuzzyMatch(joined, commandList, 0.5);
     if (!matched.empty()) {
         if (duration_cast<milliseconds>(now - lastTriggerTime).count() >= cooldownMs) {
             lastTriggerTime = now;
@@ -44,19 +44,21 @@ int CommandRecognizer::onNewWord(const std::string &word) {
             wordWindow.clear();
             return 1;
             // TODO: 执行动作
-        }return 0;
+        }
+         std::cout << "[Command Triggered 冷却时间] " << "你好 小霖！！" << std::endl;
+         return 0;
     }return 0;
 }
 
 std::map<std::string, std::string> CommandRecognizer::createPinyinMap() {
     return {
         // “你好”
-        {"你", "ni"}, {"尼", "ni"}, {"泥", "ni"}, {"倪", "ni"},
+        {"你", "ni"}, {"尼", "ni"}, {"泥", "ni"}, {"倪", "ni"},{"您","nin"},
         {"好", "hao"}, {"号", "hao"}, {"浩", "hao"}, {"郝", "hao"},
 
         // “你好小霖”
         {"小", "xiao"}, {"晓", "xiao"}, {"笑", "xiao"}, {"肖", "xiao"}, {"效", "xiao"},
-        {"霖", "lin"}, {"林", "lin"}, {"琳", "lin"}, {"零", "ling"}, {"邻", "lin"},
+        {"霖", "lin"}, {"林", "lin"}, {"琳", "lin"}, {"零", "ling"}, {"邻", "lin"},{"宁","ning"},
         {"少","shao"},{"像","xiang"},
 
 
@@ -229,7 +231,7 @@ std::string CommandRecognizer::fuzzyMatch(const std::string& input,
                                           float threshold) {
 
     // 汉字数量不足两个，跳过
-    if (countChineseCharacters(input) < 2) {
+    if (countChineseCharacters(input) <= 2) {
         return "";
     }
 

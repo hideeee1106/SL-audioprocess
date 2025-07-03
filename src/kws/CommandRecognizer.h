@@ -20,7 +20,7 @@ using namespace std::chrono;
 
 class CommandRecognizer {
 public:
-    CommandRecognizer(int max_window_size = 5, int cooldown_ms = 2000)
+    CommandRecognizer(int max_window_size = 4, int cooldown_ms = 2000)
         : maxWindowSize(max_window_size), cooldownMs(cooldown_ms) {
 
         lastTriggerTime = steady_clock::now() - milliseconds(cooldown_ms);
@@ -51,7 +51,7 @@ private:
             // "你好", "早上好", "晚安", "再见", "你真可爱", "我回来了", "我饿了", "好累",
             // "心情不好", "谢谢你", "我喜欢你", "好无聊", "你好笨", "你真聪明", "对不起",
             // "生日快乐", "做个鬼脸", "夸我", "生气", "今天天气", "你在干什么"
-            "你好小零","你好小明"};
+            "你好小零","你好小明","您好小零","你好像零","你要下零"};
     }
 
 };

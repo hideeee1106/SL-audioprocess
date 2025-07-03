@@ -186,55 +186,49 @@ public:
      int Run_ALL(short *mic, short *ref) {
         using namespace std::chrono;
         auto start = high_resolution_clock::now();
-
-        int code = 0;
-        for (size_t i = 0; i < 5120; ++i) {
-            if (ref[i] != 0) {
-                code = 1;
-            }
-        }
-
-
-
-        if (code == 0 ){
-
-            for (int i = 0; i < 10; ++i) {
-                nkfProcessor->enhance(mic+i*512, ref+i*512);
-                auto nkfout = nkfProcessor->getoutput();
-                for (int j = 0; j < AEC_BLOCK_SHIFT; ++j) {
-                    NkfOutAudioCaffe.push_back(nkfout[j]);
-                }
-                nkfProcessor->reset();
-                size_t N = NkfOutAudioCaffe.size() / Ns_BLOCK_WINDOWS;
-                size_t M = NkfOutAudioCaffe.size() % Ns_BLOCK_WINDOWS;
-
-                for (int i = 0; i < N; ++i) {
-                    short NSINPUT[160] = {0};
-                    short NSOUTPUT[160] = {0};
-                    for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                        NSINPUT[j] = NkfOutAudioCaffe[j + i * Ns_BLOCK_WINDOWS];
-                    }
-                    float prob = nsProcessor->rnnoise_process_frame(NSOUTPUT, NSINPUT);
-                    RunAGC(NSOUTPUT);
-                    for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
-                        NsOutAudioCaffe.push_back(NSOUTPUT[j]);
-                    }
-                }
-                remove_front_n(NkfOutAudioCaffe, N * Ns_BLOCK_WINDOWS);
-
-            }
-
-        }
-
-
-
-
-
-
+        int code = 1;
+        // int code = 0;
+        // for (size_t i = 0; i < 5120; ++i) {
+        //     if (ref[i] != 0) {
+        //         code = 1;
+        //     }
+        // }
+        //
+        //
+        //
+        // if (code == 0 ){
+        //
+        //     for (int i = 0; i < 10; ++i) {
+        //         nkfProcessor->enhance(mic+i*512, ref+i*512);
+        //         auto nkfout = nkfProcessor->getoutput();
+        //         for (int j = 0; j < AEC_BLOCK_SHIFT; ++j) {
+        //             NkfOutAudioCaffe.push_back(nkfout[j]);
+        //         }
+        //         nkfProcessor->reset();
+        //         size_t N = NkfOutAudioCaffe.size() / Ns_BLOCK_WINDOWS;
+        //         size_t M = NkfOutAudioCaffe.size() % Ns_BLOCK_WINDOWS;
+        //
+        //         for (int i = 0; i < N; ++i) {
+        //             short NSINPUT[160] = {0};
+        //             short NSOUTPUT[160] = {0};
+        //             for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+        //                 NSINPUT[j] = NkfOutAudioCaffe[j + i * Ns_BLOCK_WINDOWS];
+        //             }
+        //             float prob = nsProcessor->rnnoise_process_frame(NSOUTPUT, NSINPUT);
+        //             RunAGC(NSOUTPUT);
+        //             for (int j = 0; j < Ns_BLOCK_WINDOWS; ++j) {
+        //                 NsOutAudioCaffe.push_back(NSOUTPUT[j]);
+        //             }
+        //         }
+        //         remove_front_n(NkfOutAudioCaffe, N * Ns_BLOCK_WINDOWS);
+        //
+        //     }
+        //
+        // }
 
 
 //      输入 5120  SHORT 音频
-        else if (code == 1) {
+        if (code == 1) {
             for (int i=0;i<32;i++) {
                 short nkfout[160];
                 RunAEC(mic+i*160,ref+i*160, nkfout);
