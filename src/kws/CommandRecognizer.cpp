@@ -13,7 +13,7 @@ int CommandRecognizer::onNewWord(const std::string &word) {
     auto now = steady_clock::now();
 
     // 1. 检查是否超过 2 秒没人说话
-    if (duration_cast<milliseconds>(now - lastWordTime).count() > 2000) {
+    if (duration_cast<milliseconds>(now - lastWordTime).count() > 1000) {
         wordWindow.clear();
         // std::cout << "[Info] 超过2秒没人说话，清空窗口" << std::endl;
     }
@@ -226,23 +226,45 @@ float CommandRecognizer::calculateSimilarity(const std::string& s1, const std::s
     return 1.0f - (float)dp[len1][len2] / std::max(len1, len2);
 }
 
+bool isValidMatch(const std::string& pinyin) {
+    // 第一条件：包含霖/零/林
+    bool hasLin = pinyin.find("lin") != std::string::npos ||
+                 pinyin.find("ming") != std::string::npos||
+                 pinyin.find("ling") != std::string::npos;
+
+    // 第二条件：包含你/您/小
+    bool hasPrefix = pinyin.find("ni") != std::string::npos ||   // 你
+                    pinyin.find("nin") != std::string::npos ||  // 您
+                    pinyin.find("hao") != std::string::npos ||
+                    pinyin.find("xiao") != std::string::npos;    // 小
+
+    return hasLin && hasPrefix;
+}
+
+
+
+
+
 std::string CommandRecognizer::fuzzyMatch(const std::string& input,
                                           const std::vector<std::string>& commands,
                                           float threshold) {
 
     // 汉字数量不足两个，跳过
-    if (countChineseCharacters(input) <= 2) {
-        return "";
+    int chineseCount = countChineseCharacters(input);
+    if (chineseCount <= 2) {
+        if (input == "你零") {
+            return "你好小霖";
+        } else {
+            return "";
+        }
     }
 
     std::string inputPinyin = getPinyin(input);
 
-    // 必须包含 lin / ling / ming 才能匹配
-    if (inputPinyin.find("lin") == std::string::npos &&
-        inputPinyin.find("ling") == std::string::npos &&
-        inputPinyin.find("ming") == std::string::npos) {
-        return "";
-        }
+    if (!isValidMatch(inputPinyin)) {
+        return ""; // 不满足基本条件直接返回
+    }
+
 
     std::string bestMatch;
     float maxScore = 0.0f;
