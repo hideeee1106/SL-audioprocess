@@ -13,7 +13,7 @@ int CommandRecognizer::onNewWord(const std::string &word) {
     auto now = steady_clock::now();
 
     // 1. 检查是否超过 2 秒没人说话
-    if (duration_cast<milliseconds>(now - lastWordTime).count() > 2000) {
+    if (duration_cast<milliseconds>(now - lastWordTime).count() > 1500) {
         wordWindow.clear();
         // std::cout << "[Info] 超过2秒没人说话，清空窗口" << std::endl;
     }
@@ -42,7 +42,7 @@ int CommandRecognizer::onNewWord(const std::string &word) {
             lastTriggerTime = now;
             std::cout << "[Command Triggered] "<< matched<< std::endl;
             wordWindow.clear();
-            if (matched == "小松小松") {
+            if (matched == "你好小零" || matched == "小松小松") {
                 return 1;
             }
             if (matched == "打开龙头") {
