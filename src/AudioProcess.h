@@ -174,8 +174,12 @@ public:
         float prob = nsProcessor->rnnoise_process_frame(out, in);
         return prob;
     }
+    void write_pcm_append(const std::string& filename, const std::vector<short>& data) {
+        std::ofstream pcm_file(filename, std::ios::binary | std::ios::app);  // 👈 追加模式
+        pcm_file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(short));
+    }
 
-     int Run_ALL(short *mic, short *ref) {
+    int Run_ALL(short *mic, short *ref) {
         using namespace std::chrono;
         auto start = high_resolution_clock::now();
 
@@ -198,6 +202,7 @@ public:
         auto end = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(end - start);
         // std::cout << "耗时: " << duration.count() << " ms" << std::endl;
+        write_pcm_append("/data/debug_out.pcm", NsOutAudioCaffe);
 
 
 
@@ -216,69 +221,7 @@ public:
         }return -2;
 #endif
 
-#if pocketsphinxkws
-        if( M == 0){
-            if (enable_use_kws_){
 
-                int silencecode = simple_vad_int16_2560(NsOutAudioCaffe.data(),NsOutAudioCaffe.size());
-//                printf("silence:%d\n",silencecode);
-                if(silencecode == 1){
-                    if(not in_speech){
-                        in_speech = true;
-                        ps_start_utt(ps);
-
-                    }
-
-                    ps_process_raw(ps, NsOutAudioCaffe.data(), NsOutAudioCaffe.size(), FALSE, FALSE);
-                    count = count + 1;
-                    if (count > MAX_SPEECH_TIME){
-                        LOGD("MAX_SPEECH_TIME");
-                        ps_end_utt(ps);
-                        const char *hyp = ps_get_hyp(ps, nullptr);
-                        resetkws();
-                        if (hyp != nullptr) {
-                            printf("识别结果：%s\n", hyp);
-                            return 3;
-                        } else {
-                            printf("无识别结果\n");
-                            return 4;
-                        }
-
-
-                    }
-
-                    return 2;
-//                  识别到语音，准备唤醒检测
-                }
-                else{
-                    if(in_speech){
-                        wait_count = wait_count + 1;
-                    }
-
-//                    count
-                    if(in_speech && wait_count == 3){
-                        ps_end_utt(ps);
-                        const char *hyp = ps_get_hyp(ps, nullptr);
-                        resetkws();
-                        if (hyp != nullptr) {
-                            printf("识别成功！！！！！！！！！！！，识别结果：%s\n", hyp);
-                            return 3;
-
-                        } else {
-                            printf("无识别结果\n");
-                            return 4;
-                        }
-
-                    }
-
-                }
-            }
-
-            return 1;
-        } else{
-            return 0;
-        }
-#endif
     }
 
     int run_kws(const short *wav){

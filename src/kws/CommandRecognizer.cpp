@@ -40,9 +40,21 @@ int CommandRecognizer::onNewWord(const std::string &word) {
     if (!matched.empty()) {
         if (duration_cast<milliseconds>(now - lastTriggerTime).count() >= cooldownMs) {
             lastTriggerTime = now;
-            std::cout << "[Command Triggered] " << "你好 小霖！！" << std::endl;
+            std::cout << "[Command Triggered] "<< matched<< std::endl;
             wordWindow.clear();
-            return 1;
+            if (matched == "小松小松") {
+                return 1;
+            }
+            if (matched == "打开龙头") {
+                return 2;
+            }
+            if (matched == "关闭龙头") {
+                return 3;
+            }
+            if (matched == "出一杯水") {
+                return 4;
+            }
+
             // TODO: 执行动作
         }return 0;
     }return 0;
@@ -58,7 +70,7 @@ std::map<std::string, std::string> CommandRecognizer::createPinyinMap() {
         {"小", "xiao"}, {"晓", "xiao"}, {"笑", "xiao"}, {"肖", "xiao"}, {"效", "xiao"},
         {"霖", "lin"}, {"林", "lin"}, {"琳", "lin"}, {"零", "ling"}, {"邻", "lin"},
         {"少","shao"},{"像","xiang"},
-
+           {"松","song"},{"嵩","song"},{"宋","song"},{"送","song"},{"怂","song"},{"颂","song"},
 
 
         // “早上好”
@@ -147,8 +159,26 @@ std::map<std::string, std::string> CommandRecognizer::createPinyinMap() {
         {"什", "shen"}, {"甚", "shen"},
         {"么", "me"}, {"摩", "mo"},
 
-        // 补充一些常见识别混淆字
-        {"啦", "la"}, {"啊", "a"}, {"呀", "ya"}
+                // 补充一些常见识别混淆字
+        {"啦", "la"}, {"啊", "a"}, {"呀", "ya"},// 出一杯水
+        {"出", "chu"}, {"初", "chu"}, {"楚", "chu"}, {"畜", "chu"},
+        {"一", "yi"}, {"衣", "yi"}, {"伊", "yi"}, {"医", "yi"},
+        {"杯", "bei"}, {"背", "bei"}, {"悲", "bei"}, {"北", "bei"},
+        {"水", "shui"}, {"谁", "shui"}, {"税", "shui"},
+
+        // 打开龙头
+        {"打", "da"}, {"大", "da"}, {"答", "da"},
+        {"开", "kai"}, {"凯", "kai"}, {"慨", "kai"},
+        {"龙", "long"}, {"笼", "long"}, {"隆", "long"}, {"聋", "long"},
+        {"头", "tou"}, {"投", "tou"}, {"透", "tou"},
+
+        // 关闭龙头
+        {"关", "guan"}, {"官", "guan"}, {"管", "guan"}, {"观", "guan"},
+        {"闭", "bi"}, {"必", "bi"}, {"毕", "bi"}, {"碧", "bi"},
+        // "龙头" 已列于上方
+
+
+
     };
 }
 
@@ -236,11 +266,11 @@ std::string CommandRecognizer::fuzzyMatch(const std::string& input,
     std::string inputPinyin = getPinyin(input);
 
     // 必须包含 lin / ling / ming 才能匹配
-    if (inputPinyin.find("lin") == std::string::npos &&
-        inputPinyin.find("ling") == std::string::npos &&
-        inputPinyin.find("ming") == std::string::npos) {
-        return "";
-        }
+    // if (inputPinyin.find("lin") == std::string::npos &&
+    //     inputPinyin.find("ling") == std::string::npos &&
+    //     inputPinyin.find("ming") == std::string::npos) {
+    //     return "";
+    //     }
 
     std::string bestMatch;
     float maxScore = 0.0f;

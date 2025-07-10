@@ -96,8 +96,8 @@ int PostDecoder::match_and_output(){
                 //     lastzifu = pair.second;
                 //     return 1;
                 // }
-                if (code ==1) {
-                    return 1;
+                if (code != 0) {
+                    return code;
                 }
                 lastzifu = pair.second;
                 // printf("lastzifu:%d\n", lastzifu);

@@ -20,7 +20,7 @@ using namespace std::chrono;
 
 class CommandRecognizer {
 public:
-    CommandRecognizer(int max_window_size = 5, int cooldown_ms = 2000)
+    CommandRecognizer(int max_window_size = 4, int cooldown_ms = 2000)
         : maxWindowSize(max_window_size), cooldownMs(cooldown_ms) {
 
         lastTriggerTime = steady_clock::now() - milliseconds(cooldown_ms);
