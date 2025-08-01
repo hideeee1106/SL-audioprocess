@@ -11,9 +11,9 @@ wekwsMNN::KeywordSpottingMNN::KeywordSpottingMNN(const std::string &model_path) 
     // 2. Create Session
     MNN::ScheduleConfig config;
 
-//    MNN::BackendConfig backendConfig;
-//    backendConfig.precision= MNN::BackendConfig::Precision_High;
-//    config.backendConfig= &backendConfig;
+    MNN::BackendConfig backendConfig;
+    backendConfig.precision= MNN::BackendConfig::Precision_High;
+    config.backendConfig= &backendConfig;
 
     session_ = interpreter_->createSession(config);
 

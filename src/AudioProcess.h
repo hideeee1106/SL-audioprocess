@@ -106,7 +106,7 @@ public:
         }
 
     //webrtc agc
-        agcConfig.compressionGaindB = 15; // default 9 dB
+        agcConfig.compressionGaindB = 25; // default 9 dB
         agcConfig.limiterEnable = 1; // default kAgcTrue (on)
         agcConfig.targetLevelDbfs = 1; // default 3 (-3 dBOv)
         int minLevel = 0;
@@ -202,7 +202,7 @@ public:
         auto end = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(end - start);
         // std::cout << "耗时: " << duration.count() << " ms" << std::endl;
-        write_pcm_append("/data/debug_out.pcm", NsOutAudioCaffe);
+        // write_pcm_append("/data/debug_out.pcm", NsOutAudioCaffe);
 
 
 
