@@ -47,14 +47,14 @@ int CommandRecognizer::onNewWord(const std::string &word) {
                 std::cout << "[Command Triggered] "<< "小霖小霖"<< std::endl;
                 return 1;
             }
-            // if (matched == "打开龙头" || matched=="打开农头" || matched=="打开农投"|| matched=="打开"  ) {
-            //     std::cout << "[Command Triggered] "<< "打开龙头"<< std::endl;
-            //     return 2;
-            // }
-            // if (matched == "关闭"|| matched=="关必"|| matched=="关闭农投" || matched == "关必龙头" ) {
-            //     std::cout << "[Command Triggered] "<< "关闭龙头"<< std::endl;
-            //     return 3;
-            // }
+            if (matched == "打开龙头" || matched=="打开农头" || matched=="打开农投"|| matched=="打开"  ) {
+                std::cout << "[Command Triggered] "<< "打开龙头"<< std::endl;
+                return 2;
+            }
+            if (matched == "关闭"|| matched=="关必"|| matched=="关闭农投" || matched == "关必龙头" ) {
+                std::cout << "[Command Triggered] "<< "关闭龙头"<< std::endl;
+                return 3;
+            }
             // if (matched == "出一杯水") {
             //     return 4;
             // }

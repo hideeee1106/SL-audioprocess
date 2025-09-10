@@ -18,7 +18,6 @@ class KwsPipeline {
 public:
     KwsPipeline(const std::string& model_path, const std::string& token_file);
 
-
     int run(const std::string& wav_path);
 
     int run(const std::vector<int16_t> &wav);

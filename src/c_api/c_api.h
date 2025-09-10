@@ -31,7 +31,6 @@ extern "C"
 
     SL_CAPI_EXPORT extern int SL_EchoCancelFilterForWav1C16khz(SL_AudioProcesser *predictor, short *mic, short *ref,short * res);
 
-
     SL_CAPI_EXPORT extern void SL_EchoNoiseCancelForWav1C16khz(SL_AudioProcesser *predictor,short *in,short *out);
 
 /*!

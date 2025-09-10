@@ -132,7 +132,7 @@ int main(int argc, char *argv[]){
 
 
     SL_AudioProcesser* filter = SL_CreateAudioProcesser(model_path);
-    SL_AudioOpenKWS(filter,"/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/avg_30.mnn",
+    SL_AudioOpenKWS(filter,"/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/v6test.mnn",
                     "/home/hideeee/CLionProjects/AudioProcess-Deploy-R328/models/tokens.txt");
 
     short out[512*5] = {0};
