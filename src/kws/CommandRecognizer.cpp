@@ -55,6 +55,48 @@ int CommandRecognizer::onNewWord(const std::string &word) {
                 std::cout << "[Command Triggered] "<< "关闭龙头"<< std::endl;
                 return 3;
             }
+            if (matched == "切换净水"|| matched=="净水" ) {
+                std::cout << "[Command Triggered] "<< "切换净水"<< std::endl;
+                return 4;
+            }
+            if (matched == "切换原水"|| matched=="原水" ) {
+                std::cout << "[Command Triggered] "<< "切换原水"<< std::endl;
+                return 5;
+            }
+            if (matched == "提高水温"|| matched=="提高" ) {
+                std::cout << "[Command Triggered] "<< "提高水温"<< std::endl;
+                return 6;
+            }
+            if (matched == "降低水温"|| matched=="降低" ) {
+                std::cout << "[Command Triggered] "<< "降低水温"<< std::endl;
+                return 7;
+            }
+            if (matched == "增大流量"|| matched=="增大" ) {
+                std::cout << "[Command Triggered] "<< "增大流量"<< std::endl;
+                return 8;
+            }
+            if (matched == "减小流量"|| matched=="减小" ) {
+                std::cout << "[Command Triggered] "<< "减小流量"<< std::endl;
+                return 9;
+            }
+            if (matched == "水温一档") {
+                return 10;
+            }
+            if (matched == "水温二档") {
+                return 11;
+            }
+            if (matched == "水温三档") {
+                return 12;
+            }
+            if (matched == "流量一档") {
+                return 13;
+            }
+            if (matched == "流量二档") {
+                return 14;
+            }
+            if (matched == "流量三档") {
+                return 15;
+            }
             // if (matched == "出一杯水") {
             //     return 4;
             // }
